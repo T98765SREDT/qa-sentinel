@@ -1,0 +1,84 @@
+{
+  "name": "QA Sentinel Demo Regression Suite",
+  "workers": 4,
+  "variables": {
+    "base_url": "http://127.0.0.1:8765",
+    "api_token": "demo-token-never-print-this"
+  },
+  "defaults": {
+    "timeout_seconds": 2,
+    "retries": 1,
+    "retry_delay_seconds": 0.05,
+    "retry_on_status": [429, 500, 502, 503, 504],
+    "headers": {
+      "Accept": "application/json",
+      "Authorization": "Bearer {{api_token}}"
+    }
+  },
+  "tests": [
+    {
+      "id": "health-check",
+      "name": "Service health and version contract",
+      "method": "GET",
+      "url": "{{base_url}}/health?token={{api_token}}",
+      "tags": ["smoke", "contract"],
+      "assertions": [
+        {"type": "status", "equals": 200},
+        {"type": "json_path", "path": "status", "equals": "ok"},
+        {"type": "json_path", "path": "version", "equals": "1.0.0"},
+        {"type": "header", "name": "X-Demo-API", "equals": "qa-sentinel"},
+        {"type": "latency", "max_ms": 500}
+      ]
+    },
+    {
+      "id": "user-contract",
+      "name": "Nested user response contract",
+      "method": "GET",
+      "url": "{{base_url}}/users/1",
+      "tags": ["regression", "json"],
+      "assertions": [
+        {"type": "status", "equals": 200},
+        {"type": "json_path", "path": "data.id", "equals": 1},
+        {"type": "json_path", "path": "data.roles[1]", "equals": "engineer"},
+        {"type": "json_path", "path": "data.email", "exists": false}
+      ]
+    },
+    {
+      "id": "create-payload",
+      "name": "POST body serialization and echo",
+      "method": "POST",
+      "url": "{{base_url}}/echo",
+      "json": {"name": "sentinel", "enabled": true, "checks": 3},
+      "tags": ["regression", "write"],
+      "assertions": [
+        {"type": "status", "equals": 201},
+        {"type": "json_path", "path": "received.name", "equals": "sentinel"},
+        {"type": "json_path", "path": "received.enabled", "equals": true}
+      ]
+    },
+    {
+      "id": "retry-recovery",
+      "name": "Transient failure recovers after retry",
+      "method": "GET",
+      "url": "{{base_url}}/unstable?key=quickstart&failures=1",
+      "tags": ["resilience", "retry"],
+      "assertions": [
+        {"type": "status", "equals": 200},
+        {"type": "json_path", "path": "status", "equals": "recovered"},
+        {"type": "json_path", "path": "attempt", "equals": 2}
+      ]
+    },
+    {
+      "id": "latency-budget",
+      "name": "Endpoint stays within latency budget",
+      "method": "GET",
+      "url": "{{base_url}}/slow?ms=30",
+      "tags": ["performance"],
+      "assertions": [
+        {"type": "status", "equals": 200},
+        {"type": "json_path", "path": "waited_ms", "equals": 30},
+        {"type": "latency", "max_ms": 500}
+      ]
+    }
+  ]
+}

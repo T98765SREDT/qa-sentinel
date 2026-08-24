@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.coverage
+.pytest_cache/
+.venv/
+dist/
+build/
+*.egg-info/
+qa-sentinel-report.html
+qa-sentinel-report.json
+

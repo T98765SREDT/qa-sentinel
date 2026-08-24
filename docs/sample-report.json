@@ -1,0 +1,235 @@
+{
+  "schema_version": "1.0",
+  "suite": "QA Sentinel Demo Regression Suite",
+  "started_at": "2026-08-24T13:18:53.991+00:00",
+  "finished_at": "2026-08-24T13:18:54.058+00:00",
+  "duration_ms": 66.882,
+  "summary": {
+    "total": 5,
+    "passed": 5,
+    "failed": 0,
+    "success_rate": 100.0
+  },
+  "tests": [
+    {
+      "id": "health-check",
+      "name": "Service health and version contract",
+      "method": "GET",
+      "url": "http://127.0.0.1:18765/health?token=[REDACTED]",
+      "tags": [
+        "smoke",
+        "contract"
+      ],
+      "passed": true,
+      "status": 200,
+      "latency_ms": 10.747,
+      "attempts": 1,
+      "error": null,
+      "started_at": "2026-08-24T13:18:53.991+00:00",
+      "finished_at": "2026-08-24T13:18:54.002+00:00",
+      "assertions": [
+        {
+          "type": "status",
+          "passed": true,
+          "message": "status 200 matched 200",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "type": "json_path",
+          "passed": true,
+          "message": "path 'status' matched expected value",
+          "expected": "ok",
+          "actual": "ok"
+        },
+        {
+          "type": "json_path",
+          "passed": true,
+          "message": "path 'version' matched expected value",
+          "expected": "1.0.0",
+          "actual": "1.0.0"
+        },
+        {
+          "type": "header",
+          "passed": true,
+          "message": "header 'X-Demo-API' matched",
+          "expected": "qa-sentinel",
+          "actual": "qa-sentinel"
+        },
+        {
+          "type": "latency",
+          "passed": true,
+          "message": "latency 10.7 ms was within 500 ms",
+          "expected": 500.0,
+          "actual": 10.747
+        }
+      ]
+    },
+    {
+      "id": "user-contract",
+      "name": "Nested user response contract",
+      "method": "GET",
+      "url": "http://127.0.0.1:18765/users/1",
+      "tags": [
+        "regression",
+        "json"
+      ],
+      "passed": true,
+      "status": 200,
+      "latency_ms": 10.128,
+      "attempts": 1,
+      "error": null,
+      "started_at": "2026-08-24T13:18:53.991+00:00",
+      "finished_at": "2026-08-24T13:18:54.002+00:00",
+      "assertions": [
+        {
+          "type": "status",
+          "passed": true,
+          "message": "status 200 matched 200",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "type": "json_path",
+          "passed": true,
+          "message": "path 'data.id' matched expected value",
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "type": "json_path",
+          "passed": true,
+          "message": "path 'data.roles[1]' matched expected value",
+          "expected": "engineer",
+          "actual": "engineer"
+        },
+        {
+          "type": "json_path",
+          "passed": true,
+          "message": "path 'data.email' was absent as expected",
+          "expected": false,
+          "actual": false
+        }
+      ]
+    },
+    {
+      "id": "create-payload",
+      "name": "POST body serialization and echo",
+      "method": "POST",
+      "url": "http://127.0.0.1:18765/echo",
+      "tags": [
+        "regression",
+        "write"
+      ],
+      "passed": true,
+      "status": 201,
+      "latency_ms": 10.746,
+      "attempts": 1,
+      "error": null,
+      "started_at": "2026-08-24T13:18:53.991+00:00",
+      "finished_at": "2026-08-24T13:18:54.002+00:00",
+      "assertions": [
+        {
+          "type": "status",
+          "passed": true,
+          "message": "status 201 matched 201",
+          "expected": 201,
+          "actual": 201
+        },
+        {
+          "type": "json_path",
+          "passed": true,
+          "message": "path 'received.name' matched expected value",
+          "expected": "sentinel",
+          "actual": "sentinel"
+        },
+        {
+          "type": "json_path",
+          "passed": true,
+          "message": "path 'received.enabled' matched expected value",
+          "expected": true,
+          "actual": true
+        }
+      ]
+    },
+    {
+      "id": "retry-recovery",
+      "name": "Transient failure recovers after retry",
+      "method": "GET",
+      "url": "http://127.0.0.1:18765/unstable?key=quickstart&failures=1",
+      "tags": [
+        "resilience",
+        "retry"
+      ],
+      "passed": true,
+      "status": 200,
+      "latency_ms": 4.491,
+      "attempts": 2,
+      "error": null,
+      "started_at": "2026-08-24T13:18:53.992+00:00",
+      "finished_at": "2026-08-24T13:18:54.058+00:00",
+      "assertions": [
+        {
+          "type": "status",
+          "passed": true,
+          "message": "status 200 matched 200",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "type": "json_path",
+          "passed": true,
+          "message": "path 'status' matched expected value",
+          "expected": "recovered",
+          "actual": "recovered"
+        },
+        {
+          "type": "json_path",
+          "passed": true,
+          "message": "path 'attempt' matched expected value",
+          "expected": 2,
+          "actual": 2
+        }
+      ]
+    },
+    {
+      "id": "latency-budget",
+      "name": "Endpoint stays within latency budget",
+      "method": "GET",
+      "url": "http://127.0.0.1:18765/slow?ms=30",
+      "tags": [
+        "performance"
+      ],
+      "passed": true,
+      "status": 200,
+      "latency_ms": 36.403,
+      "attempts": 1,
+      "error": null,
+      "started_at": "2026-08-24T13:18:54.002+00:00",
+      "finished_at": "2026-08-24T13:18:54.038+00:00",
+      "assertions": [
+        {
+          "type": "status",
+          "passed": true,
+          "message": "status 200 matched 200",
+          "expected": 200,
+          "actual": 200
+        },
+        {
+          "type": "json_path",
+          "passed": true,
+          "message": "path 'waited_ms' matched expected value",
+          "expected": 30,
+          "actual": 30
+        },
+        {
+          "type": "latency",
+          "passed": true,
+          "message": "latency 36.4 ms was within 500 ms",
+          "expected": 500.0,
+          "actual": 36.403
+        }
+      ]
+    }
+  ]
+}
