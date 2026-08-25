@@ -12,6 +12,8 @@ QA Sentinel turns readable JSON test suites into repeatable API quality checks. 
 
 No third-party runtime packages are required.
 
+[Open the interactive sample report](https://t98765sredt.github.io/qa-sentinel/) · [Browse the source](https://github.com/T98765SREDT/qa-sentinel) · [Read the architecture](ARCHITECTURE.md)
+
 ![QA Sentinel HTML report](docs/qa-sentinel-report.png)
 
 ## Why this project exists
@@ -28,7 +30,7 @@ Small teams often need repeatable API contract checks without adopting a large t
 - Recursive secret redaction for authorization headers, tokens, API keys, passwords, URLs, and known values
 - Attractive standalone HTML reports with search and pass/fail filters
 - Machine-readable JSON reports and meaningful CLI exit codes (`0` pass, `1` test failure, `2` configuration error)
-- Deterministic local demo API and stdlib `unittest` coverage
+- Deterministic local demo API and 24 automated `unittest` checks
 - Optional JUnit XML output for build systems and CI test-report viewers
 
 ## Quickstart
