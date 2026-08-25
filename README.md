@@ -1,3 +1,4 @@
+
 # QA Sentinel
 
 **Dependency-free API regression testing with concurrency, retries, secret-safe diagnostics, and polished reports.**
@@ -11,6 +12,8 @@
 QA Sentinel turns readable JSON test suites into repeatable API quality checks. It validates status codes, nested JSON values, headers, response bodies, and latency budgets; retries transient failures with exponential backoff; runs independent checks in parallel; and generates machine-readable JSON plus a self-contained, filterable HTML dashboard.
 
 No third-party runtime packages are required.
+
+[Open the interactive sample report](https://t98765sredt.github.io/qa-sentinel/) · [Browse the source](https://github.com/T98765SREDT/qa-sentinel) · [Read the architecture](ARCHITECTURE.md)
 
 ![QA Sentinel HTML report](docs/qa-sentinel-report.png)
 
@@ -28,7 +31,7 @@ Small teams often need repeatable API contract checks without adopting a large t
 - Recursive secret redaction for authorization headers, tokens, API keys, passwords, URLs, and known values
 - Attractive standalone HTML reports with search and pass/fail filters
 - Machine-readable JSON reports and meaningful CLI exit codes (`0` pass, `1` test failure, `2` configuration error)
-- Deterministic local demo API and stdlib `unittest` coverage
+- Deterministic local demo API and 24 automated `unittest` checks
 - Optional JUnit XML output for build systems and CI test-report viewers
 
 ## Quickstart
