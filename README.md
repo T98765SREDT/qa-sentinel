@@ -6,6 +6,7 @@
 [![stdlib only](https://img.shields.io/badge/runtime-stdlib%20only-12a36d)](pyproject.toml)
 [![tests: unittest](https://img.shields.io/badge/tests-unittest-6657d9)](tests/)
 [![license: MIT](https://img.shields.io/badge/license-MIT-172033)](LICENSE)
+[![CI](https://github.com/T98765SREDT/qa-sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/T98765SREDT/qa-sentinel/actions/workflows/ci.yml)
 
 QA Sentinel turns readable JSON test suites into repeatable API quality checks. It validates status codes, nested JSON values, headers, response bodies, and latency budgets; retries transient failures with exponential backoff; runs independent checks in parallel; and generates machine-readable JSON plus a self-contained, filterable HTML dashboard.
 
@@ -142,6 +143,12 @@ python3 -m compileall -q qa_sentinel tests examples
 ```
 
 Integration tests start the demo server on an ephemeral local port and verify concurrent execution, retry recovery, failing assertions, CLI exit behavior, report creation, and secret removal.
+
+## Engineering notes
+
+- The core is intentionally dependency-free and CI verifies compilation plus unit/integration behavior on supported Python versions.
+- Reports are designed to be useful in CI but must not be treated as a secret manager; use environment variables for credentials.
+- Read [CONTRIBUTING.md](CONTRIBUTING.md) for the verification checklist and [SECURITY.md](SECURITY.md) for credential-handling boundaries.
 
 ## LinkedIn-ready project entry
 
