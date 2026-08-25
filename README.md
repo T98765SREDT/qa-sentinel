@@ -29,6 +29,7 @@ Small teams often need repeatable API contract checks without adopting a large t
 - Attractive standalone HTML reports with search and pass/fail filters
 - Machine-readable JSON reports and meaningful CLI exit codes (`0` pass, `1` test failure, `2` configuration error)
 - Deterministic local demo API and stdlib `unittest` coverage
+- Optional JUnit XML output for build systems and CI test-report viewers
 
 ## Quickstart
 
@@ -45,7 +46,8 @@ Terminal 2 — execute five regression checks:
 ```bash
 python3 -m qa_sentinel run examples/demo-suite.json \
   --html qa-sentinel-report.html \
-  --json qa-sentinel-report.json
+  --json qa-sentinel-report.json \
+  --junit qa-sentinel-report.xml
 ```
 
 The suite demonstrates nested JSON contracts, POST serialization, a latency budget, and a `503 → retry → 200` recovery flow.
@@ -149,6 +151,7 @@ Integration tests start the demo server on an ephemeral local port and verify co
 - The core is intentionally dependency-free and CI verifies compilation plus unit/integration behavior on supported Python versions.
 - Reports are designed to be useful in CI but must not be treated as a secret manager; use environment variables for credentials.
 - Read [CONTRIBUTING.md](CONTRIBUTING.md) for the verification checklist and [SECURITY.md](SECURITY.md) for credential-handling boundaries.
+- See [CHANGELOG.md](CHANGELOG.md) for user-visible release history.
 
 ## LinkedIn-ready project entry
 
@@ -179,9 +182,9 @@ Each submitted future is mapped to its original suite index. Results are written
 
 The report pipeline removes values under credential-shaped keys, bearer tokens, sensitive query parameters, and known secret variable values. This lowers the chance of exposing credentials in CI artifacts. It is defense in depth, not a secret manager: credentials should still come from environment variables and should never be committed to a real suite.
 
-### 5. What would you build next?
+### 5. How does QA Sentinel integrate with CI systems?
 
-I would add JSON Schema assertions, JUnit XML output for CI platforms, request hooks for OAuth token refresh, and pluggable transports. I would also benchmark connection pooling before changing the networking layer, rather than claiming it improves performance without measurements.
+The CLI returns a non-zero exit code when a suite fails and can emit both JSON and standard JUnit XML through `--junit report.xml`. That makes it suitable for a build step and lets CI report viewers surface individual API failures. The same redaction pipeline is applied before all report formats are written.
 
 ## License
 

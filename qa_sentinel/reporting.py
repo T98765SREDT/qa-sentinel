@@ -6,9 +6,10 @@ import html
 import json
 from pathlib import Path
 from typing import Any
+from xml.etree import ElementTree as ET
 
 from .models import SuiteResult
-from .redact import redact
+from .redact import redact, redact_text
 
 
 def build_report(result: SuiteResult, known_secrets: tuple[str, ...] = ()) -> dict[str, Any]:
@@ -69,6 +70,76 @@ def write_json_report(
         json.dumps(build_report(result, known_secrets), indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
+    return path
+
+
+def render_junit_xml(result: SuiteResult, known_secrets: tuple[str, ...] = ()) -> str:
+    """Render a secret-safe JUnit XML document for CI test-report consumers."""
+
+    suite = ET.Element(
+        "testsuite",
+        {
+            "name": redact_text(result.suite_name, known_secrets),
+            "tests": str(result.total),
+            "failures": str(result.failed),
+            "errors": str(sum(bool(test.response.error) for test in result.tests)),
+            "time": f"{result.duration_ms / 1000:.3f}",
+            "timestamp": result.started_at,
+        },
+    )
+    for test in result.tests:
+        case = ET.SubElement(
+            suite,
+            "testcase",
+            {
+                "classname": "qa_sentinel.api",
+                "name": redact_text(test.case.name, known_secrets),
+                "time": f"{test.response.elapsed_ms / 1000:.3f}",
+            },
+        )
+        if test.response.error:
+            error = ET.SubElement(
+                case,
+                "error",
+                {"message": redact_text(test.response.error, known_secrets)},
+            )
+            error.text = redact_text(test.response.error, known_secrets)
+        elif not test.passed:
+            messages = "\n".join(
+                assertion.message for assertion in test.assertions if not assertion.passed
+            )
+            failure = ET.SubElement(
+                case,
+                "failure",
+                {
+                    "message": redact_text(messages or "API assertions failed", known_secrets),
+                    "type": "AssertionError",
+                },
+            )
+            failure.text = redact_text(messages, known_secrets)
+        ET.SubElement(
+            case,
+            "system-out",
+        ).text = redact_text(
+            f"{test.case.method} {test.case.url}\n"
+            f"status={test.response.status} attempts={test.response.attempts} "
+            f"latency_ms={test.response.elapsed_ms:.3f}",
+            known_secrets,
+        )
+    ET.indent(suite, space="  ")
+    return '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(
+        suite, encoding="unicode"
+    ) + "\n"
+
+
+def write_junit_report(
+    result: SuiteResult, destination: str | Path, known_secrets: tuple[str, ...] = ()
+) -> Path:
+    """Write a JUnit XML report compatible with common CI report viewers."""
+
+    path = Path(destination)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(render_junit_xml(result, known_secrets), encoding="utf-8")
     return path
 
 
@@ -149,4 +220,3 @@ def write_html_report(
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(render_html(result, known_secrets), encoding="utf-8")
     return path
-

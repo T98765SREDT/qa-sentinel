@@ -10,7 +10,7 @@ from typing import Sequence
 from . import __version__
 from .config import ConfigError, load_suite
 from .demo_api import serve
-from .reporting import write_html_report, write_json_report
+from .reporting import write_html_report, write_json_report, write_junit_report
 from .runner import SuiteRunner
 
 
@@ -37,6 +37,11 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("suite", type=Path, help="path to the JSON suite")
     run.add_argument("--html", type=Path, default=Path("qa-sentinel-report.html"))
     run.add_argument("--json", type=Path, default=Path("qa-sentinel-report.json"))
+    run.add_argument(
+        "--junit",
+        type=Path,
+        help="optional JUnit XML report for CI test-report consumers",
+    )
     run.add_argument("--workers", type=int, help="override suite concurrency (1-64)")
     run.add_argument("--var", action="append", default=[], metavar="KEY=VALUE", help="override a suite variable")
     run.add_argument("--quiet", action="store_true", help="only print the final summary")
@@ -82,12 +87,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         result = SuiteRunner().run(suite, workers=args.workers)
         html_path = write_html_report(result, args.html, suite.known_secrets)
         json_path = write_json_report(result, args.json, suite.known_secrets)
+        junit_path = (
+            write_junit_report(result, args.junit, suite.known_secrets) if args.junit else None
+        )
     except (ConfigError, argparse.ArgumentTypeError, ValueError) as exc:
         print(f"qa-sentinel: {exc}", file=sys.stderr)
         return 2
     _print_results(result, args.quiet)
     print(f"HTML report: {html_path}")
     print(f"JSON report: {json_path}")
+    if junit_path:
+        print(f"JUnit report: {junit_path}")
     return 0 if result.is_successful else 1
 
 
