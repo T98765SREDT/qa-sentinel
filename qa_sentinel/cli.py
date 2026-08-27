@@ -10,6 +10,7 @@ from typing import Sequence
 from . import __version__
 from .config import ConfigError, load_suite
 from .demo_api import serve
+from .redact import redact_text
 from .reporting import write_html_report, write_json_report, write_junit_report
 from .runner import SuiteRunner
 
@@ -45,6 +46,15 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--workers", type=int, help="override suite concurrency (1-64)")
     run.add_argument("--var", action="append", default=[], metavar="KEY=VALUE", help="override a suite variable")
     run.add_argument("--quiet", action="store_true", help="only print the final summary")
+    validate = subparsers.add_parser("validate", help="validate a suite without sending requests")
+    validate.add_argument("suite", type=Path, help="path to the JSON suite")
+    validate.add_argument(
+        "--var",
+        action="append",
+        default=[],
+        metavar="KEY=VALUE",
+        help="override a suite variable during validation",
+    )
     demo = subparsers.add_parser("serve-demo", help="start the deterministic local demo API")
     demo.add_argument("--host", default="127.0.0.1")
     demo.add_argument("--port", type=int, default=8765)
@@ -52,7 +62,9 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _print_results(result: object, quiet: bool = False) -> None:
+def _print_results(
+    result: object, quiet: bool = False, known_secrets: tuple[str, ...] = ()
+) -> None:
     from .models import SuiteResult
 
     if not isinstance(result, SuiteResult):
@@ -61,17 +73,19 @@ def _print_results(result: object, quiet: bool = False) -> None:
         for test in result.tests:
             marker = "PASS" if test.passed else "FAIL"
             status = test.response.status if test.response.status is not None else "ERR"
-            print(
+            print(redact_text(
                 f"[{marker}] {test.case.name}  status={status}  "
-                f"latency={test.response.elapsed_ms:.1f}ms  attempts={test.response.attempts}"
-            )
+                f"latency={test.response.elapsed_ms:.1f}ms  attempts={test.response.attempts}",
+                known_secrets,
+            ))
             for assertion in test.assertions:
                 if not assertion.passed:
-                    print(f"       - {assertion.message}")
-    print(
+                    print(redact_text(f"       - {assertion.message}", known_secrets))
+    print(redact_text(
         f"\n{result.suite_name}: {result.passed}/{result.total} passed "
-        f"({result.success_rate:.1f}%) in {result.duration_ms:.1f}ms"
-    )
+        f"({result.success_rate:.1f}%) in {result.duration_ms:.1f}ms",
+        known_secrets,
+    ))
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -84,6 +98,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         overrides = _variables(args.var)
         suite = load_suite(args.suite, overrides)
+        if args.command == "validate":
+            print(
+                redact_text(
+                    f"Valid suite: {suite.name} ({len(suite.tests)} test(s))",
+                    suite.known_secrets,
+                )
+            )
+            return 0
         result = SuiteRunner().run(suite, workers=args.workers)
         html_path = write_html_report(result, args.html, suite.known_secrets)
         json_path = write_json_report(result, args.json, suite.known_secrets)
@@ -93,7 +115,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     except (ConfigError, argparse.ArgumentTypeError, ValueError) as exc:
         print(f"qa-sentinel: {exc}", file=sys.stderr)
         return 2
-    _print_results(result, args.quiet)
+    _print_results(result, args.quiet, suite.known_secrets)
     print(f"HTML report: {html_path}")
     print(f"JSON report: {json_path}")
     if junit_path:

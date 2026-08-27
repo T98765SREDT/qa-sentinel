@@ -6,6 +6,11 @@ from dataclasses import dataclass, field
 from typing import Any, Mapping
 
 
+IDEMPOTENT_METHODS = frozenset({"GET", "HEAD", "PUT", "DELETE", "OPTIONS", "TRACE"})
+MAX_RETRIES = 5
+MAX_RETRY_DELAY_SECONDS = 30.0
+
+
 @dataclass(frozen=True)
 class AssertionSpec:
     """A single declarative response assertion."""
@@ -28,6 +33,7 @@ class TestCase:
     retries: int
     retry_delay_seconds: float
     retry_on_status: tuple[int, ...]
+    retry_non_idempotent: bool
     assertions: tuple[AssertionSpec, ...]
     tags: tuple[str, ...] = ()
 
@@ -110,4 +116,3 @@ class SuiteResult:
     @property
     def is_successful(self) -> bool:
         return self.failed == 0
-

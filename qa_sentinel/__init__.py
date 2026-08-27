@@ -4,4 +4,4 @@ from .config import ConfigError, load_suite
 from .runner import SuiteRunner
 
 __all__ = ["ConfigError", "SuiteRunner", "load_suite"]
-__version__ = "1.1.0"
+__version__ = "1.2.0"

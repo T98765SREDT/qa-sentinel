@@ -58,6 +58,18 @@ class ConfigTests(unittest.TestCase):
             suite = load_suite(path)
         self.assertEqual(suite.tests[0].headers["X-Build"], "42")
 
+    def test_resolved_environment_secret_is_collected_for_redaction(self) -> None:
+        document = valid_document()
+        document["variables"]["api_token"] = "${RUNTIME_VALUE}"  # type: ignore[index]
+        document["tests"][0]["url"] = (  # type: ignore[index]
+            "http://localhost:8000/health?credential={{api_token}}"
+        )
+        temporary, path = self.write(document)
+        self.addCleanup(temporary.cleanup)
+        with patch.dict(os.environ, {"RUNTIME_VALUE": "resolved-env-secret"}):
+            suite = load_suite(path)
+        self.assertIn("resolved-env-secret", suite.known_secrets)
+
     def test_duplicate_ids_are_rejected(self) -> None:
         document = valid_document()
         document["tests"] = [document["tests"][0], document["tests"][0]]  # type: ignore[index]
@@ -82,7 +94,55 @@ class ConfigTests(unittest.TestCase):
         with self.assertRaisesRegex(ConfigError, "absolute HTTP"):
             load_suite(path)
 
+    def test_url_without_hostname_is_rejected(self) -> None:
+        document = valid_document()
+        document["tests"][0]["url"] = "http:///health"  # type: ignore[index]
+        temporary, path = self.write(document)
+        self.addCleanup(temporary.cleanup)
+        with self.assertRaisesRegex(ConfigError, "hostname"):
+            load_suite(path)
+
+    def test_url_user_information_is_rejected(self) -> None:
+        document = valid_document()
+        document["tests"][0]["url"] = "https://user:pass@example.test/health"  # type: ignore[index]
+        temporary, path = self.write(document)
+        self.addCleanup(temporary.cleanup)
+        with self.assertRaisesRegex(ConfigError, "user information"):
+            load_suite(path)
+
+    def test_unknown_assertion_is_rejected_during_loading(self) -> None:
+        document = valid_document()
+        document["tests"][0]["assertions"] = [{"type": "mystery"}]  # type: ignore[index]
+        temporary, path = self.write(document)
+        self.addCleanup(temporary.cleanup)
+        with self.assertRaisesRegex(ConfigError, "unsupported assertion"):
+            load_suite(path)
+
+    def test_malformed_assertion_is_rejected_during_loading(self) -> None:
+        document = valid_document()
+        document["tests"][0]["assertions"] = [  # type: ignore[index]
+            {"type": "status", "equals": "200"}
+        ]
+        temporary, path = self.write(document)
+        self.addCleanup(temporary.cleanup)
+        with self.assertRaisesRegex(ConfigError, "HTTP integers"):
+            load_suite(path)
+
+    def test_retry_settings_have_safety_caps(self) -> None:
+        document = valid_document()
+        document["defaults"]["retries"] = 6  # type: ignore[index]
+        temporary, path = self.write(document)
+        self.addCleanup(temporary.cleanup)
+        with self.assertRaisesRegex(ConfigError, "must not exceed 5"):
+            load_suite(path)
+
+        document["defaults"]["retries"] = 0  # type: ignore[index]
+        document["defaults"]["retry_delay_seconds"] = 31  # type: ignore[index]
+        temporary, path = self.write(document)
+        self.addCleanup(temporary.cleanup)
+        with self.assertRaisesRegex(ConfigError, "must not exceed 30"):
+            load_suite(path)
+
 
 if __name__ == "__main__":
     unittest.main()
-

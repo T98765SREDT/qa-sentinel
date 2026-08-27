@@ -76,13 +76,17 @@ def write_json_report(
 def render_junit_xml(result: SuiteResult, known_secrets: tuple[str, ...] = ()) -> str:
     """Render a secret-safe JUnit XML document for CI test-report consumers."""
 
+    error_count = sum(bool(test.response.error) for test in result.tests)
+    failure_count = sum(
+        not test.passed and not test.response.error for test in result.tests
+    )
     suite = ET.Element(
         "testsuite",
         {
             "name": redact_text(result.suite_name, known_secrets),
             "tests": str(result.total),
-            "failures": str(result.failed),
-            "errors": str(sum(bool(test.response.error) for test in result.tests)),
+            "failures": str(failure_count),
+            "errors": str(error_count),
             "time": f"{result.duration_ms / 1000:.3f}",
             "timestamp": result.started_at,
         },
