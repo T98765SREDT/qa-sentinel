@@ -223,6 +223,15 @@ def load_suite(path: str | Path, overrides: Mapping[str, str] | None = None) -> 
     name = document.get("name", suite_path.stem)
     if not isinstance(name, str) or not name.strip():
         raise ConfigError("name must be a non-empty string")
+    description = document.get("description", "")
+    if not isinstance(description, str):
+        raise ConfigError("description must be a string")
+    environment = document.get("environment", "")
+    if not isinstance(environment, str):
+        raise ConfigError("environment must be a string")
+    environment = environment.strip()
+    if len(environment) > 80:
+        raise ConfigError("environment must be 80 characters or fewer")
 
     raw_variables = _expect_mapping(document.get("variables", {}), "variables")
     variables = dict(raw_variables)
@@ -336,4 +345,11 @@ def load_suite(path: str | Path, overrides: Mapping[str, str] | None = None) -> 
     workers = _non_negative_integer(document.get("workers", 4), "workers")
     if not 1 <= workers <= 64:
         raise ConfigError("workers must be between 1 and 64")
-    return TestSuite(name=name.strip(), tests=tuple(cases), workers=workers, known_secrets=known_secrets)
+    return TestSuite(
+        name=name.strip(),
+        tests=tuple(cases),
+        workers=workers,
+        known_secrets=known_secrets,
+        description=description.strip(),
+        environment=environment,
+    )

@@ -1,0 +1,64 @@
+{
+  "name": "QA Sentinel Intentional Failure Example",
+  "description": "Intentional failure example. No production system was tested.",
+  "environment": "local failure demo",
+  "workers": 4,
+  "variables": {
+    "base_url": "http://127.0.0.1:8765",
+    "api_token": "demo-token-never-print-this"
+  },
+  "defaults": {
+    "timeout_seconds": 2,
+    "retries": 1,
+    "retry_delay_seconds": 0.05,
+    "retry_on_status": [503],
+    "headers": {
+      "Accept": "application/json",
+      "Authorization": "Bearer {{api_token}}"
+    }
+  },
+  "tests": [
+    {
+      "id": "status-mismatch",
+      "name": "Status contract returns the expected code",
+      "url": "{{base_url}}/status/418?token={{api_token}}",
+      "tags": ["failure", "status"],
+      "assertions": [{"type": "status", "equals": 200}]
+    },
+    {
+      "id": "json-mismatch",
+      "name": "JSON value matches the contract",
+      "url": "{{base_url}}/users/1",
+      "tags": ["failure", "json"],
+      "assertions": [{"type": "json_path", "path": "data.id", "equals": 99}]
+    },
+    {
+      "id": "missing-path",
+      "name": "Required JSON path is present",
+      "url": "{{base_url}}/users/1",
+      "tags": ["failure", "json"],
+      "assertions": [{"type": "json_path", "path": "data.plan", "exists": true}]
+    },
+    {
+      "id": "header-mismatch",
+      "name": "Response header matches the contract",
+      "url": "{{base_url}}/health",
+      "tags": ["failure", "headers"],
+      "assertions": [{"type": "header", "name": "X-Demo-API", "equals": "other-service"}]
+    },
+    {
+      "id": "latency-exceeded",
+      "name": "Endpoint stays inside the latency budget",
+      "url": "{{base_url}}/slow?ms=80",
+      "tags": ["failure", "performance"],
+      "assertions": [{"type": "latency", "max_ms": 1}]
+    },
+    {
+      "id": "retry-exhausted",
+      "name": "Transient outage recovers within the retry budget",
+      "url": "{{base_url}}/unstable?key=failure-demo&failures=5",
+      "tags": ["failure", "retry"],
+      "assertions": [{"type": "status", "equals": 200}]
+    }
+  ]
+}

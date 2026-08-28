@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
+from dataclasses import replace
 from pathlib import Path
 from typing import Sequence
 
@@ -27,6 +29,60 @@ def _variables(values: list[str]) -> dict[str, str]:
     return result
 
 
+def _tag(value: str) -> str:
+    tag = value.strip()
+    if not tag:
+        raise argparse.ArgumentTypeError("tag cannot be empty")
+    return tag
+
+
+def select_tests(suite: object, include_tags: list[str], exclude_tags: list[str]) -> object:
+    """Return a suite filtered by tags; repeated include tags use OR semantics."""
+
+    from .models import TestSuite
+
+    if not isinstance(suite, TestSuite):
+        return suite
+    includes = {tag.casefold() for tag in include_tags}
+    excludes = {tag.casefold() for tag in exclude_tags}
+    selected = [
+        case for case in suite.tests
+        if (not includes or includes.intersection(tag.casefold() for tag in case.tags))
+        and not excludes.intersection(tag.casefold() for tag in case.tags)
+    ]
+    if not selected:
+        requested = ", ".join(include_tags) if include_tags else "the exclude filters"
+        raise ConfigError(f"Tag selection matched zero tests for {requested}.")
+    return replace(suite, tests=tuple(selected))
+
+
+def _add_tag_filters(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--tag",
+        action="append",
+        type=_tag,
+        default=[],
+        metavar="TAG",
+        help="include tests carrying any selected tag (repeat for OR semantics)",
+    )
+    parser.add_argument(
+        "--exclude-tag",
+        action="append",
+        type=_tag,
+        default=[],
+        metavar="TAG",
+        help="exclude tests carrying any selected tag (applied after --tag)",
+    )
+
+
+def _add_environment(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--environment",
+        metavar="NAME",
+        help="label this run with an environment name (overrides the suite label)",
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="qa-sentinel",
@@ -45,7 +101,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     run.add_argument("--workers", type=int, help="override suite concurrency (1-64)")
     run.add_argument("--var", action="append", default=[], metavar="KEY=VALUE", help="override a suite variable")
+    _add_tag_filters(run)
     run.add_argument("--quiet", action="store_true", help="only print the final summary")
+    _add_environment(run)
     validate = subparsers.add_parser("validate", help="validate a suite without sending requests")
     validate.add_argument("suite", type=Path, help="path to the JSON suite")
     validate.add_argument(
@@ -55,6 +113,8 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="KEY=VALUE",
         help="override a suite variable during validation",
     )
+    _add_tag_filters(validate)
+    _add_environment(validate)
     demo = subparsers.add_parser("serve-demo", help="start the deterministic local demo API")
     demo.add_argument("--host", default="127.0.0.1")
     demo.add_argument("--port", type=int, default=8765)
@@ -81,11 +141,23 @@ def _print_results(
             for assertion in test.assertions:
                 if not assertion.passed:
                     print(redact_text(f"       - {assertion.message}", known_secrets))
+                    if assertion.expected is not None or assertion.actual is not None:
+                        expected = _format_value(assertion.expected)
+                        actual = _format_value(assertion.actual)
+                        print(redact_text(f"         expected={expected} actual={actual}", known_secrets))
     print(redact_text(
         f"\n{result.suite_name}: {result.passed}/{result.total} passed "
         f"({result.success_rate:.1f}%) in {result.duration_ms:.1f}ms",
         known_secrets,
     ))
+
+
+def _format_value(value: object) -> str:
+    """Keep CLI assertion diagnostics compact while preserving structured values."""
+
+    if isinstance(value, (dict, list, tuple)):
+        return json.dumps(value, ensure_ascii=False, sort_keys=True)
+    return "—" if value is None else str(value)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -98,10 +170,18 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         overrides = _variables(args.var)
         suite = load_suite(args.suite, overrides)
+        if args.environment is not None:
+            environment = args.environment.strip()
+            if not environment or len(environment) > 80:
+                raise ValueError("--environment must contain 1 to 80 characters")
+            suite = replace(suite, environment=environment)
+        suite = select_tests(suite, args.tag, args.exclude_tag)
         if args.command == "validate":
             print(
                 redact_text(
-                    f"Valid suite: {suite.name} ({len(suite.tests)} test(s))",
+                    f"Valid suite: {suite.name}"
+                    f"{f' [{suite.environment}]' if suite.environment else ''} "
+                    f"({len(suite.tests)} test(s))",
                     suite.known_secrets,
                 )
             )

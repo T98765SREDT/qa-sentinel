@@ -4,13 +4,13 @@
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![stdlib only](https://img.shields.io/badge/runtime-stdlib%20only-12a36d)](pyproject.toml)
-[![43 tests](https://img.shields.io/badge/tests-43%20passing-6657d9)](tests/)
+[![50 tests](https://img.shields.io/badge/tests-50%20passing-6657d9)](tests/)
 [![license: MIT](https://img.shields.io/badge/license-MIT-172033)](LICENSE)
 [![CI](https://github.com/T98765SREDT/qa-sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/T98765SREDT/qa-sentinel/actions/workflows/ci.yml)
 
 QA Sentinel is a dependency-free Python CLI for small API regression suites. It validates response contracts, runs independent checks concurrently, retries eligible transient failures, and writes reports that are suitable for local review or CI artifacts.
 
-[View the generated sample report](docs/sample-report.html) · [Browse the source](https://github.com/T98765SREDT/qa-sentinel) · [Review the security policy](SECURITY.md)
+[View the passing sample report](docs/sample-report.html) · [View the intentional failure report](docs/sample-failure-report.html) · [Browse the source](https://github.com/T98765SREDT/qa-sentinel) · [Review the security policy](SECURITY.md)
 
 ![QA Sentinel HTML report](docs/qa-sentinel-report.png)
 
@@ -35,6 +35,12 @@ python3 -m qa_sentinel run examples/demo-suite.json \
   --junit qa-sentinel-report.xml
 ```
 
+Run only a tagged subset when a full suite is unnecessary. Repeated `--tag` values use OR semantics; `--exclude-tag` is applied afterward. A selection that matches zero tests exits with code `2` before any request is sent. Add an optional top-level `environment` label to keep local, staging, and production reports distinguishable, or override it for a run with `--environment`.
+
+```bash
+python3 -m qa_sentinel run suite.json --tag smoke --tag contract --exclude-tag destructive
+```
+
 A successful run prints one line per check and finishes with a summary:
 
 ```text
@@ -52,6 +58,8 @@ The same run creates:
 - a self-contained HTML report with search and pass/fail filters;
 - structured JSON for scripts and other automation;
 - optional JUnit XML for CI test-report viewers.
+
+To inspect the failure-first diagnostics without touching a production service, run `examples/failure-suite.json` against the local demo API. It intentionally exercises status, JSON, header, latency, retry, and redaction failures.
 
 Open the checked-in examples: [HTML report](docs/sample-report.html) · [JSON report](docs/sample-report.json)
 
@@ -80,6 +88,7 @@ Configuration and assertion shapes are validated before the first network reques
 ```json
 {
   "name": "Production smoke suite",
+  "environment": "staging",
   "workers": 4,
   "variables": {
     "base_url": "https://api.example.com",
@@ -154,11 +163,11 @@ redact.py ── credential removal at the output boundary
    └── cli.py       ── commands, terminal output, exit codes
 ```
 
-Immutable dataclasses carry normalized test cases and results between the transport, assertion, orchestration, and reporting layers. Report formatting does not determine whether a test passes.
+Immutable dataclasses carry normalized test cases and results between the transport, assertion, orchestration, and reporting layers. An optional suite environment is carried with the immutable result so terminal output, JSON, HTML, and JUnit artifacts can be traced back to `local`, `staging`, or another explicitly named target. Report formatting does not determine whether a test passes.
 
 ## Verification
 
-Run all 43 unit and integration tests:
+Run all 50 unit and integration tests:
 
 ```bash
 python3 -m unittest discover -s tests -v
@@ -170,7 +179,7 @@ Check that every Python source file compiles:
 python3 -m compileall -q qa_sentinel tests examples
 ```
 
-The test suite covers configuration validation, JSON paths, core assertion evaluation, deterministic concurrency, retry eligibility and caps, redirect policy, report generation, JUnit counts, CLI exit behavior, and secret removal. Integration tests bind the demo API to an ephemeral local port. CI runs the checks defined in [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+The test suite covers configuration validation, JSON paths, core assertion evaluation, deterministic concurrency, retry eligibility and caps, redirect policy, report generation, tag selection, JUnit counts, CLI exit behavior, and secret removal. Integration tests bind the demo API to an ephemeral local port. CI runs the checks defined in [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
 ## Project layout
 

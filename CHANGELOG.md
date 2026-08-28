@@ -2,6 +2,15 @@
 
 All notable changes to QA Sentinel are documented here. This project follows a lightweight semantic versioning approach for its public CLI and report formats.
 
+## Unreleased
+
+- Added optional suite environment labels to CLI validation and HTML, JSON, and JUnit outputs, with a `--environment` run-time override.
+- Added OR-based `--tag` selection and post-filter `--exclude-tag` support with an explicit zero-match configuration error.
+- Expanded the automated suite to 50 checks and isolated the retry demo fixtures for repeatable integration runs.
+- Added expected-versus-actual diagnostics to failed CLI and HTML assertions.
+- Added searchable assertion text, accessible filter state, human-readable report timestamps, and an empty-results state.
+- Refreshed the checked-in sample report and expanded integration coverage to 45 tests.
+
 ## 1.2.0 — 2026-08-27
 
 - Added `qa-sentinel validate` so configuration and assertions can be checked without sending network requests.

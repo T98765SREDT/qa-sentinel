@@ -1,5 +1,6 @@
 {
   "name": "QA Sentinel Demo Regression Suite",
+  "environment": "local demo",
   "workers": 4,
   "variables": {
     "base_url": "http://127.0.0.1:8765",

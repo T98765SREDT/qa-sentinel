@@ -1,0 +1,173 @@
+{
+  "schema_version": "1.0",
+  "suite": "QA Sentinel Intentional Failure Example",
+  "description": "Intentional failure example. No production system was tested.",
+  "environment": "local failure demo",
+  "started_at": "2026-08-28T13:58:08.333+00:00",
+  "finished_at": "2026-08-28T13:58:08.441+00:00",
+  "duration_ms": 108.2,
+  "summary": {
+    "total": 6,
+    "passed": 0,
+    "failed": 6,
+    "success_rate": 0.0
+  },
+  "tests": [
+    {
+      "id": "status-mismatch",
+      "name": "Status contract returns the expected code",
+      "method": "GET",
+      "url": "http://127.0.0.1:8876/status/418?token=[REDACTED]",
+      "tags": [
+        "failure",
+        "status"
+      ],
+      "passed": false,
+      "status": 418,
+      "latency_ms": 12.049,
+      "attempts": 1,
+      "error": null,
+      "started_at": "2026-08-28T13:58:08.333+00:00",
+      "finished_at": "2026-08-28T13:58:08.347+00:00",
+      "assertions": [
+        {
+          "type": "status",
+          "passed": false,
+          "message": "status 418 did not match 200",
+          "expected": 200,
+          "actual": 418
+        }
+      ]
+    },
+    {
+      "id": "json-mismatch",
+      "name": "JSON value matches the contract",
+      "method": "GET",
+      "url": "http://127.0.0.1:8876/users/1",
+      "tags": [
+        "failure",
+        "json"
+      ],
+      "passed": false,
+      "status": 200,
+      "latency_ms": 12.278,
+      "attempts": 1,
+      "error": null,
+      "started_at": "2026-08-28T13:58:08.333+00:00",
+      "finished_at": "2026-08-28T13:58:08.346+00:00",
+      "assertions": [
+        {
+          "type": "json_path",
+          "passed": false,
+          "message": "path 'data.id' did not match expected value",
+          "expected": 99,
+          "actual": 1
+        }
+      ]
+    },
+    {
+      "id": "missing-path",
+      "name": "Required JSON path is present",
+      "method": "GET",
+      "url": "http://127.0.0.1:8876/users/1",
+      "tags": [
+        "failure",
+        "json"
+      ],
+      "passed": false,
+      "status": 200,
+      "latency_ms": 11.678,
+      "attempts": 1,
+      "error": null,
+      "started_at": "2026-08-28T13:58:08.334+00:00",
+      "finished_at": "2026-08-28T13:58:08.346+00:00",
+      "assertions": [
+        {
+          "type": "json_path",
+          "passed": false,
+          "message": "path 'data.plan' existence was False, expected True",
+          "expected": true,
+          "actual": false
+        }
+      ]
+    },
+    {
+      "id": "header-mismatch",
+      "name": "Response header matches the contract",
+      "method": "GET",
+      "url": "http://127.0.0.1:8876/health",
+      "tags": [
+        "failure",
+        "headers"
+      ],
+      "passed": false,
+      "status": 200,
+      "latency_ms": 11.874,
+      "attempts": 1,
+      "error": null,
+      "started_at": "2026-08-28T13:58:08.334+00:00",
+      "finished_at": "2026-08-28T13:58:08.346+00:00",
+      "assertions": [
+        {
+          "type": "header",
+          "passed": false,
+          "message": "header 'X-Demo-API' did not match",
+          "expected": "other-service",
+          "actual": "qa-sentinel"
+        }
+      ]
+    },
+    {
+      "id": "latency-exceeded",
+      "name": "Endpoint stays inside the latency budget",
+      "method": "GET",
+      "url": "http://127.0.0.1:8876/slow?ms=80",
+      "tags": [
+        "failure",
+        "performance"
+      ],
+      "passed": false,
+      "status": 200,
+      "latency_ms": 95.601,
+      "attempts": 1,
+      "error": null,
+      "started_at": "2026-08-28T13:58:08.346+00:00",
+      "finished_at": "2026-08-28T13:58:08.441+00:00",
+      "assertions": [
+        {
+          "type": "latency",
+          "passed": false,
+          "message": "latency 95.6 ms exceeded 1 ms",
+          "expected": 1.0,
+          "actual": 95.601
+        }
+      ]
+    },
+    {
+      "id": "retry-exhausted",
+      "name": "Transient outage recovers within the retry budget",
+      "method": "GET",
+      "url": "http://127.0.0.1:8876/unstable?key=failure-demo&failures=5",
+      "tags": [
+        "failure",
+        "retry"
+      ],
+      "passed": false,
+      "status": 503,
+      "latency_ms": 6.356,
+      "attempts": 2,
+      "error": null,
+      "started_at": "2026-08-28T13:58:08.346+00:00",
+      "finished_at": "2026-08-28T13:58:08.418+00:00",
+      "assertions": [
+        {
+          "type": "status",
+          "passed": false,
+          "message": "status 503 did not match 200",
+          "expected": 200,
+          "actual": 503
+        }
+      ]
+    }
+  ]
+}

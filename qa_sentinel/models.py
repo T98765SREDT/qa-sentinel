@@ -46,6 +46,8 @@ class TestSuite:
     tests: tuple[TestCase, ...]
     workers: int = 4
     known_secrets: tuple[str, ...] = ()
+    description: str = ""
+    environment: str = ""
 
 
 @dataclass(frozen=True)
@@ -96,6 +98,8 @@ class SuiteResult:
     started_at: str
     finished_at: str
     duration_ms: float
+    description: str = ""
+    environment: str = ""
 
     @property
     def total(self) -> int:

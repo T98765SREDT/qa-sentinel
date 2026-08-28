@@ -61,5 +61,6 @@ class SuiteRunner:
             started_at=started_at,
             finished_at=_timestamp(),
             duration_ms=duration_ms,
+            description=suite.description,
+            environment=suite.environment,
         )
-

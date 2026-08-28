@@ -43,6 +43,22 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(suite.tests[0].headers["Authorization"], "Bearer top-secret-value")
         self.assertIn("top-secret-value", suite.known_secrets)
 
+    def test_optional_environment_label_is_normalized(self) -> None:
+        document = valid_document()
+        document["environment"] = "  staging  "
+        temporary, path = self.write(document)
+        self.addCleanup(temporary.cleanup)
+        suite = load_suite(path)
+        self.assertEqual(suite.environment, "staging")
+
+    def test_environment_label_is_bounded(self) -> None:
+        document = valid_document()
+        document["environment"] = "x" * 81
+        temporary, path = self.write(document)
+        self.addCleanup(temporary.cleanup)
+        with self.assertRaisesRegex(ConfigError, "environment"):
+            load_suite(path)
+
     def test_cli_override_replaces_variable(self) -> None:
         temporary, path = self.write(valid_document())
         self.addCleanup(temporary.cleanup)
