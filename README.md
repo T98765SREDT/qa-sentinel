@@ -1,3 +1,4 @@
+
 # QA Sentinel
 
 **Dependency-free API regression testing with concurrency, retries, secret-safe diagnostics, and polished reports.**
