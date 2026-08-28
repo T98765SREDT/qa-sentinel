@@ -1,73 +1,79 @@
-
 # QA Sentinel
 
-**Dependency-free API regression testing with concurrency, retries, secret-safe diagnostics, and polished reports.**
+**Run repeatable API checks from JSON and get useful terminal, HTML, JSON, and JUnit results.**
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![stdlib only](https://img.shields.io/badge/runtime-stdlib%20only-12a36d)](pyproject.toml)
-[![tests: unittest](https://img.shields.io/badge/tests-unittest-6657d9)](tests/)
+[![43 tests](https://img.shields.io/badge/tests-43%20passing-6657d9)](tests/)
 [![license: MIT](https://img.shields.io/badge/license-MIT-172033)](LICENSE)
 [![CI](https://github.com/T98765SREDT/qa-sentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/T98765SREDT/qa-sentinel/actions/workflows/ci.yml)
 
-QA Sentinel turns readable JSON test suites into repeatable API quality checks. It validates status codes, nested JSON values, headers, response bodies, and latency budgets; retries transient failures with exponential backoff; runs independent checks in parallel; and generates machine-readable JSON plus a self-contained, filterable HTML dashboard.
+QA Sentinel is a dependency-free Python CLI for small API regression suites. It validates response contracts, runs independent checks concurrently, retries eligible transient failures, and writes reports that are suitable for local review or CI artifacts.
 
-No third-party runtime packages are required.
-
-[Open the interactive sample report](https://t98765sredt.github.io/qa-sentinel/) · [Browse the source](https://github.com/T98765SREDT/qa-sentinel) · [Read the architecture](ARCHITECTURE.md)
+[View the generated sample report](docs/sample-report.html) · [Browse the source](https://github.com/T98765SREDT/qa-sentinel) · [Review the security policy](SECURITY.md)
 
 ![QA Sentinel HTML report](docs/qa-sentinel-report.png)
 
-## Why this project exists
-
-Small teams often need repeatable API contract checks without adopting a large test platform. QA Sentinel keeps the test definition portable, makes failure output useful in CI, and prevents common credentials from leaking into reports.
-
-## Key features
-
-- Declarative JSON suites with `{{variable}}`, `${ENVIRONMENT_VARIABLE}`, and CLI overrides
-- Status, nested JSON path/value, existence, latency, header, and body assertions
-- Parallel execution with deterministic report ordering
-- Retry policy for transport errors and configurable transient HTTP statuses
-- JSON request serialization and GET/POST/other HTTP method support
-- Recursive secret redaction for authorization headers, tokens, API keys, passwords, URLs, and known values
-- Attractive standalone HTML reports with search and pass/fail filters
-- Machine-readable JSON reports and meaningful CLI exit codes (`0` pass, `1` test failure, `2` configuration error)
-- Deterministic local demo API and 24 automated `unittest` checks
-- Optional JUnit XML output for build systems and CI test-report viewers
-
 ## Quickstart
 
-Requires Python 3.10 or newer.
+Requires Python 3.10 or newer. No runtime packages need to be installed.
 
-Terminal 1 — start the local demo API:
+Start the deterministic demo API in one terminal:
 
 ```bash
 python3 -m qa_sentinel serve-demo
 ```
 
-Terminal 2 — execute five regression checks:
+Validate the suite without sending requests, then run its five checks in another terminal:
 
 ```bash
+python3 -m qa_sentinel validate examples/demo-suite.json
+
 python3 -m qa_sentinel run examples/demo-suite.json \
   --html qa-sentinel-report.html \
   --json qa-sentinel-report.json \
   --junit qa-sentinel-report.xml
 ```
 
-The suite demonstrates nested JSON contracts, POST serialization, a latency budget, and a `503 → retry → 200` recovery flow.
+A successful run prints one line per check and finishes with a summary:
 
-You can also install the local CLI:
+```text
+[PASS] Service health and version contract  status=200  latency=...ms  attempts=1
+[PASS] Nested user response contract  status=200  latency=...ms  attempts=1
+[PASS] POST body serialization and echo  status=201  latency=...ms  attempts=1
+[PASS] Transient failure recovers after retry  status=200  latency=...ms  attempts=2
+[PASS] Endpoint stays within latency budget  status=200  latency=...ms  attempts=1
+
+QA Sentinel Demo Regression Suite: 5/5 passed (100.0%) in ...ms
+```
+
+The same run creates:
+
+- a self-contained HTML report with search and pass/fail filters;
+- structured JSON for scripts and other automation;
+- optional JUnit XML for CI test-report viewers.
+
+Open the checked-in examples: [HTML report](docs/sample-report.html) · [JSON report](docs/sample-report.json)
+
+To install the command locally:
 
 ```bash
 python3 -m pip install -e .
-qa-sentinel run examples/demo-suite.json
+qa-sentinel validate examples/demo-suite.json
 ```
 
-## Sample report
+## What a suite can verify
 
-- [Generated standalone HTML report](docs/sample-report.html)
-- [Generated JSON report](docs/sample-report.json)
+| Check | Example | Result |
+| --- | --- | --- |
+| HTTP status | `{"type": "status", "equals": 200}` | exact status or allowed status list |
+| JSON value | `{"type": "json_path", "path": "data.id", "equals": 7}` | nested objects and array indexes |
+| JSON presence | `{"type": "json_path", "path": "data.email", "exists": false}` | required or intentionally absent fields |
+| Header | `{"type": "header", "name": "Content-Type"}` | presence or exact value |
+| Body text | `{"type": "body_contains", "value": "ready"}` | substring in decoded response text |
+| Latency | `{"type": "latency", "max_ms": 750}` | response stays within a budget |
 
-The HTML artifact contains all styles and filtering logic, so it can be opened locally or uploaded directly as a CI artifact. The JSON artifact uses a stable schema for downstream automation.
+Configuration and assertion shapes are validated before the first network request. Invalid configuration exits with code `2` instead of producing a partial run.
 
 ## Suite format
 
@@ -82,8 +88,11 @@ The HTML artifact contains all styles and filtering logic, so it can be opened l
   "defaults": {
     "timeout_seconds": 5,
     "retries": 2,
+    "retry_delay_seconds": 0.25,
     "retry_on_status": [429, 500, 502, 503, 504],
-    "headers": {"Authorization": "Bearer {{api_token}}"}
+    "headers": {
+      "Authorization": "Bearer {{api_token}}"
+    }
   },
   "tests": [
     {
@@ -102,13 +111,27 @@ The HTML artifact contains all styles and filtering logic, so it can be opened l
 }
 ```
 
-Override non-secret variables per environment:
+Variables use `{{name}}`; environment values use `${NAME}`. Non-secret values can be replaced from the command line:
 
 ```bash
-python3 -m qa_sentinel run suite.json --var base_url=https://staging.example.com
+python3 -m qa_sentinel run suite.json \
+  --var base_url=https://staging.example.com
 ```
 
-Prefer `${API_TOKEN}` for real credentials. QA Sentinel rejects missing environment variables early and redacts credential-shaped fields and values from both report formats.
+Use environment variables for credentials. Missing environment variables are rejected during validation.
+
+## Reliability and safety boundaries
+
+- Tests run in parallel while reports retain the order declared in the suite.
+- Transport errors and configured transient statuses can be retried with exponential backoff.
+- Automatic retries apply only to idempotent methods by default. A non-idempotent request requires `"retry_non_idempotent": true` to opt in.
+- Retries are limited to five; each backoff delay is capped at 30 seconds.
+- URLs require an HTTP or HTTPS scheme and a hostname. Embedded URL usernames and passwords are rejected.
+- HTTPS-to-HTTP redirect downgrades are blocked. Authorization, cookies, API keys, and similar headers are removed on cross-origin redirects.
+- Resolved environment secrets and credential-shaped values are redacted from terminal output, assertion diagnostics, HTML, JSON, and JUnit reports.
+- CLI exit codes are stable: `0` for a passing suite, `1` for failed checks, and `2` for invalid configuration.
+
+Redaction is defense in depth, not credential storage. See [SECURITY.md](SECURITY.md) for the supported boundary.
 
 ## Architecture
 
@@ -119,75 +142,57 @@ JSON suite
 config.py ── interpolation, validation, normalization
    │
    ▼
-runner.py ── ThreadPoolExecutor, order preservation
+runner.py ── bounded thread pool, declaration-order results
    │
-   ├── http_client.py ── urllib transport, timeouts, retry/backoff
+   ├── http_client.py ── HTTP transport, redirects, retries, timeouts
    └── assertions.py  ── response contract evaluation
    │
    ▼
-redact.py ── recursive secret removal
+redact.py ── credential removal at the output boundary
    │
-   ├── reporting.py ── standalone HTML + structured JSON
-   └── cli.py       ── terminal output + CI exit code
+   ├── reporting.py ── HTML, JSON, and JUnit XML
+   └── cli.py       ── commands, terminal output, exit codes
 ```
 
-The transport, assertion engine, orchestration, and presentation layers use immutable dataclasses as their shared boundary. This separation keeps network behavior independently testable and prevents report formatting from influencing pass/fail logic.
+Immutable dataclasses carry normalized test cases and results between the transport, assertion, orchestration, and reporting layers. Report formatting does not determine whether a test passes.
 
-## Test and verification commands
+## Verification
 
-Run the complete unit and integration suite:
+Run all 43 unit and integration tests:
 
 ```bash
 python3 -m unittest discover -s tests -v
 ```
 
-Check every Python file compiles:
+Check that every Python source file compiles:
 
 ```bash
 python3 -m compileall -q qa_sentinel tests examples
 ```
 
-Integration tests start the demo server on an ephemeral local port and verify concurrent execution, retry recovery, failing assertions, CLI exit behavior, report creation, and secret removal.
+The test suite covers configuration validation, JSON paths, core assertion evaluation, deterministic concurrency, retry eligibility and caps, redirect policy, report generation, JUnit counts, CLI exit behavior, and secret removal. Integration tests bind the demo API to an ephemeral local port. CI runs the checks defined in [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
-## Engineering notes
+## Project layout
 
-- The core is intentionally dependency-free and CI verifies compilation plus unit/integration behavior on supported Python versions.
-- Reports are designed to be useful in CI but must not be treated as a secret manager; use environment variables for credentials.
-- Read [CONTRIBUTING.md](CONTRIBUTING.md) for the verification checklist and [SECURITY.md](SECURITY.md) for credential-handling boundaries.
-- See [CHANGELOG.md](CHANGELOG.md) for user-visible release history.
+```text
+qa_sentinel/          CLI, configuration, transport, assertions, runner, reports
+tests/                unit and integration tests
+examples/             deterministic demo suite and server entry point
+docs/                 generated HTML/JSON report examples and screenshot
+.github/workflows/    test and Pages workflows
+```
 
-## LinkedIn-ready project entry
+## Current scope and limitations
 
-**QA Sentinel — API Regression & Quality Monitoring CLI**  
-Built a Python command-line tool that executes declarative API regression suites and produces secret-safe HTML and JSON quality reports.
+- Designed for small functional and regression suites, not load or performance testing.
+- Does not run browser checks, execute arbitrary scripts, or chain values from one response into later requests.
+- JSON assertions support the documented dot-and-index path syntax; this is not a full JSONPath implementation.
+- The standard-library transport keeps installation simple but does not expose the connection pooling and timeout controls of a dedicated HTTP client.
+- Redaction recognizes configured secrets and common credential shapes, but reports should still be handled as potentially sensitive CI artifacts.
 
-- Implemented concurrent HTTP execution, configurable timeouts, transient-error retries with exponential backoff, and deterministic result ordering using Python's standard library.
-- Designed a reusable assertion engine for status codes, nested JSON paths and values, headers, response bodies, and latency budgets, with clear failure diagnostics.
-- Built recursive credential redaction, a self-contained interactive HTML dashboard, a deterministic demo API, and automated unit/integration tests without runtime dependencies.
+## Contributing and releases
 
-**Skills:** Python · API Testing · Quality Assurance · Test Automation · HTTP · JSON · Concurrency · Secure Logging
-
-## Five interview questions and honest answers
-
-### 1. Why use only the Python standard library?
-
-The constraint made deployment simple and forced clear boundaries between transport, assertions, and reporting. `urllib` provides the HTTP behavior, `concurrent.futures` provides bounded parallelism, and `unittest` covers the system. For a larger production product, I would evaluate `httpx` for connection pooling and richer timeout controls, but the current implementation remains easy to run anywhere Python is available.
-
-### 2. How does retry behavior avoid hiding real failures?
-
-Retries happen only for transport errors and explicitly configured transient HTTP statuses. Assertion failures are never retried. The final report records the total attempt count, and exponential delay reduces immediate pressure on an unhealthy service.
-
-### 3. How is result ordering deterministic when tests run concurrently?
-
-Each submitted future is mapped to its original suite index. Results are written into a pre-sized list as futures finish, then returned in declaration order. This preserves readable, stable reports without giving up concurrent requests.
-
-### 4. What security problem does redaction solve, and what are its limits?
-
-The report pipeline removes values under credential-shaped keys, bearer tokens, sensitive query parameters, and known secret variable values. This lowers the chance of exposing credentials in CI artifacts. It is defense in depth, not a secret manager: credentials should still come from environment variables and should never be committed to a real suite.
-
-### 5. How does QA Sentinel integrate with CI systems?
-
-The CLI returns a non-zero exit code when a suite fails and can emit both JSON and standard JUnit XML through `--junit report.xml`. That makes it suitable for a build step and lets CI report viewers surface individual API failures. The same redaction pipeline is applied before all report formats are written.
+[CONTRIBUTING.md](CONTRIBUTING.md) contains the local verification checklist. User-visible changes are recorded in [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
