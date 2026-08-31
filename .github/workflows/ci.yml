@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: qa-sentinel-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     name: Test on Python ${{ matrix.python-version }}
@@ -28,4 +32,60 @@ jobs:
       - name: Compile source
         run: python -m compileall -q qa_sentinel tests examples
       - name: Run test suite
-        run: python -m unittest discover -s tests -v
+        run: |
+          set -o pipefail
+          python -m unittest discover -s tests -v 2>&1 | tee test-output.txt
+      - name: Publish test output to Actions summary
+        if: always()
+        run: |
+          {
+            echo "## QA Sentinel test output (Python ${{ matrix.python-version }})"
+            echo '```text'
+            tail -n 120 test-output.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  smoke:
+    name: CLI smoke on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install local package
+        run: python -m pip install .
+      - name: Exercise installed CLI
+        run: python tests/cli_smoke.py
+
+  package:
+    name: Build and smoke-test release artifacts
+    runs-on: ubuntu-latest
+    needs: [test, smoke]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install build frontend
+        run: python -m pip install build
+      - name: Build wheel and sdist
+        run: python -m build --sdist --wheel --outdir dist
+      - name: Check artifact names
+        run: |
+          test -n "$(find dist -maxdepth 1 -name '*.whl' -print -quit)"
+          test -n "$(find dist -maxdepth 1 -name '*.tar.gz' -print -quit)"
+      - name: Install wheel in a clean environment and run demo
+        run: python tests/package_smoke.py "$(find dist -maxdepth 1 -name '*.whl' -print -quit)" --artifacts-dir package-artifacts
+      - name: Upload package smoke reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-sentinel-package-smoke-reports
+          path: package-artifacts/

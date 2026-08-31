@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="QA Sentinel Demo Regression Suite [local demo]" tests="5" failures="0" errors="0" time="0.088" timestamp="2026-08-30T07:58:37.187+00:00">
+  <properties>
+    <property name="environment" value="local demo" />
+    <property name="interrupted" value="false" />
+    <property name="run_id" value="6b9b0d08030d486585cb44bbb44e0fa3" />
+    <property name="tool_version" value="1.2.0" />
+    <property name="suite_config_hash" value="157a34d8cad5e12d" />
+    <property name="workers" value="4" />
+    <property name="suite_schema_version" value="2" />
+  </properties>
+  <testcase classname="qa_sentinel.api" name="Service health and version contract" time="0.018">
+    <system-out>GET http://127.0.0.1:60472/health?token=[REDACTED]
+status=200 attempts=1 latency_ms=18.125</system-out>
+  </testcase>
+  <testcase classname="qa_sentinel.api" name="Nested user response contract" time="0.021">
+    <system-out>GET http://127.0.0.1:60472/users/1
+status=200 attempts=1 latency_ms=20.610</system-out>
+  </testcase>
+  <testcase classname="qa_sentinel.api" name="POST body serialization and echo" time="0.019">
+    <system-out>POST http://127.0.0.1:60472/echo
+status=201 attempts=1 latency_ms=19.248</system-out>
+  </testcase>
+  <testcase classname="qa_sentinel.api" name="Transient failure recovers after retry" time="0.006">
+    <system-out>GET http://127.0.0.1:60472/unstable?key=quickstart&amp;failures=1
+status=200 attempts=2 latency_ms=6.297</system-out>
+  </testcase>
+  <testcase classname="qa_sentinel.api" name="Endpoint stays within latency budget" time="0.049">
+    <system-out>GET http://127.0.0.1:60472/slow?ms=30
+status=200 attempts=1 latency_ms=49.494</system-out>
+  </testcase>
+</testsuite>

@@ -1,13 +1,14 @@
 from __future__ import annotations
 
+import io
 import unittest
 import urllib.error
 import urllib.request
 from dataclasses import replace
 from unittest.mock import patch
 
-from qa_sentinel.http_client import HttpClient, SafeRedirectHandler
-from qa_sentinel.models import AssertionSpec, TestCase
+from qa_sentinel.http_client import HttpClient, ResponseTooLargeError, SafeRedirectHandler, _read_bounded
+from qa_sentinel.models import AssertionSpec, HttpResponse, TestCase
 
 
 class FakeResponse:
@@ -15,6 +16,7 @@ class FakeResponse:
         self.status = status
         self.headers = {"Content-Type": "application/json"}
         self._body = body
+        self._position = 0
 
     def __enter__(self) -> "FakeResponse":
         return self
@@ -22,8 +24,12 @@ class FakeResponse:
     def __exit__(self, *args: object) -> None:
         return None
 
-    def read(self) -> bytes:
-        return self._body
+    def read(self, size: int = -1) -> bytes:
+        if size < 0:
+            size = len(self._body) - self._position
+        start = self._position
+        self._position = min(len(self._body), self._position + size)
+        return self._body[start:self._position]
 
 
 class FakeOpener:
@@ -139,6 +145,49 @@ class RetryPolicyTests(unittest.TestCase):
         )
         self.assertEqual(response.attempts, 6)
         self.assertEqual([call.args[0] for call in sleep.call_args_list], [30.0] * 5)  # type: ignore[attr-defined]
+
+
+class ResponseDecodingTests(unittest.TestCase):
+    def test_declared_charset_is_used(self) -> None:
+        response = HttpResponse(
+            status=200,
+            headers={"Content-Type": "text/plain; charset=iso-8859-1"},
+            body="café".encode("iso-8859-1"),
+            elapsed_ms=1.0,
+            attempts=1,
+        )
+        self.assertEqual(response.text, "café")
+
+    def test_unknown_charset_falls_back_to_utf8(self) -> None:
+        response = HttpResponse(
+            status=200,
+            headers={"content-type": "application/json; charset=made-up"},
+            body='{"ok": true}'.encode("utf-8"),
+            elapsed_ms=1.0,
+            attempts=1,
+        )
+        self.assertEqual(response.text, '{"ok": true}')
+
+
+class ResponseLimitTests(unittest.TestCase):
+    def test_read_bounded_rejects_a_body_over_the_limit(self) -> None:
+        with self.assertRaisesRegex(ResponseTooLargeError, "10 byte limit"):
+            _read_bounded(io.BytesIO(b"01234567890"), 10)
+
+    def test_oversized_http_response_is_not_retried(self) -> None:
+        class OversizedOpener:
+            calls = 0
+
+            def open(self, request: urllib.request.Request, timeout: float) -> FakeResponse:
+                del request, timeout
+                self.calls += 1
+                return FakeResponse(503, b"x" * 11)
+
+        opener = OversizedOpener()
+        response = HttpClient(opener).execute(case(retries=3, max_response_bytes=10))
+        self.assertEqual(opener.calls, 1)
+        self.assertEqual(response.status, 503)
+        self.assertIn("10 byte limit", response.error or "")
 
 
 if __name__ == "__main__":

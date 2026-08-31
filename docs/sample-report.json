@@ -1,36 +1,74 @@
 {
-  "schema_version": "1.0",
+  "schema_version": 2,
+  "run_id": "6b9b0d08030d486585cb44bbb44e0fa3",
+  "tool_version": "1.2.0",
+  "suite_schema_version": 2,
   "suite": "QA Sentinel Demo Regression Suite",
   "description": "",
   "environment": "local demo",
-  "started_at": "2026-08-28T13:58:01.512+00:00",
-  "finished_at": "2026-08-28T13:58:01.585+00:00",
-  "duration_ms": 72.828,
+  "environment_config_hash": null,
+  "suite_config_hash": "157a34d8cad5e12d",
+  "provenance": {
+    "git_sha": null,
+    "git_branch": null,
+    "ci_url": null
+  },
+  "execution": {
+    "workers": 4,
+    "selected_tags": [],
+    "retry": {
+      "max_retries": 1,
+      "retry_on_status": [
+        429,
+        500,
+        502,
+        503,
+        504
+      ],
+      "retry_non_idempotent": false
+    }
+  },
+  "secret_sources": [],
+  "started_at": "2026-08-30T07:58:37.187+00:00",
+  "finished_at": "2026-08-30T07:58:37.276+00:00",
+  "duration_ms": 88.141,
+  "slow_threshold_ms": 500.0,
+  "interrupted": false,
   "summary": {
     "total": 5,
     "passed": 5,
     "failed": 0,
+    "errors": 0,
+    "blocked": 0,
+    "skipped": 0,
     "success_rate": 100.0
   },
+  "capture_metadata": [],
   "tests": [
     {
       "id": "health-check",
+      "request_id": "health-check",
       "name": "Service health and version contract",
       "method": "GET",
-      "url": "http://127.0.0.1:8876/health?token=[REDACTED]",
+      "url": "http://127.0.0.1:60472/health?token=[REDACTED]",
       "tags": [
         "smoke",
         "contract"
       ],
       "passed": true,
-      "status": 200,
-      "latency_ms": 15.908,
+      "status": "passed",
+      "response_status": 200,
+      "response_size_bytes": 59,
+      "response_content_type": "application/json",
+      "latency_ms": 18.125,
       "attempts": 1,
       "error": null,
-      "started_at": "2026-08-28T13:58:01.513+00:00",
-      "finished_at": "2026-08-28T13:58:01.529+00:00",
+      "response_preview": null,
+      "started_at": "2026-08-30T07:58:37.188+00:00",
+      "finished_at": "2026-08-30T07:58:37.206+00:00",
       "assertions": [
         {
+          "path": "tests[0].assertions[0]",
           "type": "status",
           "passed": true,
           "message": "status 200 matched 200",
@@ -38,6 +76,7 @@
           "actual": 200
         },
         {
+          "path": "tests[0].assertions[1]",
           "type": "json_path",
           "passed": true,
           "message": "path 'status' matched expected value",
@@ -45,6 +84,7 @@
           "actual": "ok"
         },
         {
+          "path": "tests[0].assertions[2]",
           "type": "json_path",
           "passed": true,
           "message": "path 'version' matched expected value",
@@ -52,6 +92,7 @@
           "actual": "1.0.0"
         },
         {
+          "path": "tests[0].assertions[3]",
           "type": "header",
           "passed": true,
           "message": "header 'X-Demo-API' matched",
@@ -59,32 +100,39 @@
           "actual": "qa-sentinel"
         },
         {
+          "path": "tests[0].assertions[4]",
           "type": "latency",
           "passed": true,
-          "message": "latency 15.9 ms was within 500 ms",
+          "message": "latency 18.1 ms was within 500 ms",
           "expected": 500.0,
-          "actual": 15.908
+          "actual": 18.125
         }
       ]
     },
     {
       "id": "user-contract",
+      "request_id": "user-contract",
       "name": "Nested user response contract",
       "method": "GET",
-      "url": "http://127.0.0.1:8876/users/1",
+      "url": "http://127.0.0.1:60472/users/1",
       "tags": [
         "regression",
         "json"
       ],
       "passed": true,
-      "status": 200,
-      "latency_ms": 13.083,
+      "status": "passed",
+      "response_status": 200,
+      "response_size_bytes": 75,
+      "response_content_type": "application/json",
+      "latency_ms": 20.61,
       "attempts": 1,
       "error": null,
-      "started_at": "2026-08-28T13:58:01.513+00:00",
-      "finished_at": "2026-08-28T13:58:01.526+00:00",
+      "response_preview": null,
+      "started_at": "2026-08-30T07:58:37.188+00:00",
+      "finished_at": "2026-08-30T07:58:37.209+00:00",
       "assertions": [
         {
+          "path": "tests[1].assertions[0]",
           "type": "status",
           "passed": true,
           "message": "status 200 matched 200",
@@ -92,6 +140,7 @@
           "actual": 200
         },
         {
+          "path": "tests[1].assertions[1]",
           "type": "json_path",
           "passed": true,
           "message": "path 'data.id' matched expected value",
@@ -99,6 +148,7 @@
           "actual": 1
         },
         {
+          "path": "tests[1].assertions[2]",
           "type": "json_path",
           "passed": true,
           "message": "path 'data.roles[1]' matched expected value",
@@ -106,6 +156,7 @@
           "actual": "engineer"
         },
         {
+          "path": "tests[1].assertions[3]",
           "type": "json_path",
           "passed": true,
           "message": "path 'data.email' was absent as expected",
@@ -116,22 +167,28 @@
     },
     {
       "id": "create-payload",
+      "request_id": "create-payload",
       "name": "POST body serialization and echo",
       "method": "POST",
-      "url": "http://127.0.0.1:8876/echo",
+      "url": "http://127.0.0.1:60472/echo",
       "tags": [
         "regression",
         "write"
       ],
       "passed": true,
-      "status": 201,
-      "latency_ms": 14.861,
+      "status": "passed",
+      "response_status": 201,
+      "response_size_bytes": 64,
+      "response_content_type": "application/json",
+      "latency_ms": 19.248,
       "attempts": 1,
       "error": null,
-      "started_at": "2026-08-28T13:58:01.513+00:00",
-      "finished_at": "2026-08-28T13:58:01.528+00:00",
+      "response_preview": null,
+      "started_at": "2026-08-30T07:58:37.188+00:00",
+      "finished_at": "2026-08-30T07:58:37.207+00:00",
       "assertions": [
         {
+          "path": "tests[2].assertions[0]",
           "type": "status",
           "passed": true,
           "message": "status 201 matched 201",
@@ -139,6 +196,7 @@
           "actual": 201
         },
         {
+          "path": "tests[2].assertions[1]",
           "type": "json_path",
           "passed": true,
           "message": "path 'received.name' matched expected value",
@@ -146,6 +204,7 @@
           "actual": "sentinel"
         },
         {
+          "path": "tests[2].assertions[2]",
           "type": "json_path",
           "passed": true,
           "message": "path 'received.enabled' matched expected value",
@@ -156,22 +215,28 @@
     },
     {
       "id": "retry-recovery",
+      "request_id": "retry-recovery",
       "name": "Transient failure recovers after retry",
       "method": "GET",
-      "url": "http://127.0.0.1:8876/unstable?key=quickstart&failures=1",
+      "url": "http://127.0.0.1:60472/unstable?key=quickstart&failures=1",
       "tags": [
         "resilience",
         "retry"
       ],
       "passed": true,
-      "status": 200,
-      "latency_ms": 4.813,
+      "status": "passed",
+      "response_status": 200,
+      "response_size_bytes": 37,
+      "response_content_type": "application/json",
+      "latency_ms": 6.297,
       "attempts": 2,
       "error": null,
-      "started_at": "2026-08-28T13:58:01.514+00:00",
-      "finished_at": "2026-08-28T13:58:01.585+00:00",
+      "response_preview": null,
+      "started_at": "2026-08-30T07:58:37.189+00:00",
+      "finished_at": "2026-08-30T07:58:37.276+00:00",
       "assertions": [
         {
+          "path": "tests[3].assertions[0]",
           "type": "status",
           "passed": true,
           "message": "status 200 matched 200",
@@ -179,6 +244,7 @@
           "actual": 200
         },
         {
+          "path": "tests[3].assertions[1]",
           "type": "json_path",
           "passed": true,
           "message": "path 'status' matched expected value",
@@ -186,6 +252,7 @@
           "actual": "recovered"
         },
         {
+          "path": "tests[3].assertions[2]",
           "type": "json_path",
           "passed": true,
           "message": "path 'attempt' matched expected value",
@@ -196,21 +263,27 @@
     },
     {
       "id": "latency-budget",
+      "request_id": "latency-budget",
       "name": "Endpoint stays within latency budget",
       "method": "GET",
-      "url": "http://127.0.0.1:8876/slow?ms=30",
+      "url": "http://127.0.0.1:60472/slow?ms=30",
       "tags": [
         "performance"
       ],
       "passed": true,
-      "status": 200,
-      "latency_ms": 45.313,
+      "status": "passed",
+      "response_status": 200,
+      "response_size_bytes": 17,
+      "response_content_type": "application/json",
+      "latency_ms": 49.494,
       "attempts": 1,
       "error": null,
-      "started_at": "2026-08-28T13:58:01.526+00:00",
-      "finished_at": "2026-08-28T13:58:01.572+00:00",
+      "response_preview": null,
+      "started_at": "2026-08-30T07:58:37.206+00:00",
+      "finished_at": "2026-08-30T07:58:37.256+00:00",
       "assertions": [
         {
+          "path": "tests[4].assertions[0]",
           "type": "status",
           "passed": true,
           "message": "status 200 matched 200",
@@ -218,6 +291,7 @@
           "actual": 200
         },
         {
+          "path": "tests[4].assertions[1]",
           "type": "json_path",
           "passed": true,
           "message": "path 'waited_ms' matched expected value",
@@ -225,11 +299,12 @@
           "actual": 30
         },
         {
+          "path": "tests[4].assertions[2]",
           "type": "latency",
           "passed": true,
-          "message": "latency 45.3 ms was within 500 ms",
+          "message": "latency 49.5 ms was within 500 ms",
           "expected": 500.0,
-          "actual": 45.313
+          "actual": 49.494
         }
       ]
     }

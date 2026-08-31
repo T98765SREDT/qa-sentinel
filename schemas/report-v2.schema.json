@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/T98765SREDT/qa-sentinel/schemas/report-v2.schema.json",
+  "title": "QA Sentinel report v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "run_id", "tool_version", "suite_schema_version", "suite",
+    "description", "environment", "environment_config_hash", "suite_config_hash",
+    "provenance", "execution", "secret_sources", "started_at", "finished_at",
+    "duration_ms", "slow_threshold_ms", "interrupted", "summary", "capture_metadata", "tests"
+  ],
+  "properties": {
+    "schema_version": {"const": 2},
+    "run_id": {"type": ["string", "null"]},
+    "tool_version": {"type": ["string", "null"]},
+    "suite_schema_version": {"type": "integer", "minimum": 2},
+    "suite": {"type": "string", "minLength": 1},
+    "description": {"type": "string"},
+    "environment": {"type": "string"},
+    "environment_config_hash": {"type": ["string", "null"]},
+    "suite_config_hash": {"type": ["string", "null"]},
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["git_sha", "git_branch", "ci_url"],
+      "properties": {
+        "git_sha": {"type": ["string", "null"]},
+        "git_branch": {"type": ["string", "null"]},
+        "ci_url": {"type": ["string", "null"]}
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["workers", "selected_tags", "retry"],
+      "properties": {
+        "workers": {"type": ["integer", "null"], "minimum": 1},
+        "selected_tags": {"type": "array", "items": {"type": "string"}},
+        "retry": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["max_retries", "retry_on_status", "retry_non_idempotent"],
+          "properties": {
+            "max_retries": {"type": "integer", "minimum": 0},
+            "retry_on_status": {"type": "array", "items": {"type": "integer", "minimum": 100, "maximum": 599}},
+            "retry_non_idempotent": {"type": "boolean"}
+          }
+        }
+      }
+    },
+    "secret_sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "source"],
+        "properties": {"name": {"type": "string"}, "source": {"type": "string"}}
+      }
+    },
+    "started_at": {"type": "string"},
+    "finished_at": {"type": "string"},
+    "duration_ms": {"type": "number", "minimum": 0},
+    "slow_threshold_ms": {"type": "number", "minimum": 0},
+    "interrupted": {"type": "boolean"},
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total", "passed", "failed", "errors", "blocked", "skipped", "success_rate"],
+      "properties": {
+        "total": {"type": "integer", "minimum": 0},
+        "passed": {"type": "integer", "minimum": 0},
+        "failed": {"type": "integer", "minimum": 0},
+        "errors": {"type": "integer", "minimum": 0},
+        "blocked": {"type": "integer", "minimum": 0},
+        "skipped": {"type": "integer", "minimum": 0},
+        "success_rate": {"type": "number", "minimum": 0, "maximum": 100}
+      }
+    },
+    "capture_metadata": {"type": "array", "items": {"type": "object"}},
+    "tests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id", "request_id", "name", "method", "url", "tags", "passed", "status",
+          "response_status", "response_size_bytes", "response_content_type", "latency_ms",
+          "attempts", "error", "response_preview", "started_at", "finished_at", "assertions"
+        ],
+        "properties": {
+          "id": {"type": "string"},
+          "request_id": {"type": "string"},
+          "name": {"type": "string"},
+          "method": {"type": "string"},
+          "url": {"type": "string"},
+          "tags": {"type": "array", "items": {"type": "string"}},
+          "passed": {"type": "boolean"},
+          "status": {"enum": ["passed", "failed", "error", "blocked", "skipped"]},
+          "response_status": {"type": ["integer", "null"]},
+          "response_size_bytes": {"type": "integer", "minimum": 0},
+          "response_content_type": {"type": "string"},
+          "latency_ms": {"type": "number", "minimum": 0},
+          "attempts": {"type": "integer", "minimum": 0},
+          "error": {"type": ["string", "null"]},
+          "response_preview": {"type": ["object", "null"]},
+          "reproduction": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["curl"],
+            "properties": {"curl": {"type": "string"}}
+          },
+          "started_at": {"type": "string"},
+          "finished_at": {"type": "string"},
+          "assertions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["path", "type", "passed", "message", "expected", "actual"],
+              "properties": {
+                "path": {"type": "string"},
+                "type": {"type": "string"},
+                "passed": {"type": "boolean"},
+                "message": {"type": "string"},
+                "expected": {},
+                "actual": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

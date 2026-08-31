@@ -7,12 +7,14 @@ import tempfile
 import threading
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
+from dataclasses import replace
 from pathlib import Path
 from unittest.mock import patch
 
 from qa_sentinel.cli import _print_results, main
 from qa_sentinel.config import load_suite
 from qa_sentinel.demo_api import create_demo_server
+from examples.order_server import create_order_server
 from qa_sentinel.models import (
     AssertionResult,
     AssertionSpec,
@@ -126,13 +128,16 @@ class IntegrationTests(unittest.TestCase):
     def test_environment_is_carried_into_reports(self) -> None:
         document = self.suite_document()
         document["environment"] = "staging"
+        document["slow_threshold_ms"] = 250
         document["tests"] = [document["tests"][0]]  # type: ignore[index]
         with tempfile.TemporaryDirectory() as directory:
             suite = load_suite(self.write_suite(Path(directory), document))
             result = SuiteRunner().run(suite)
         report = build_report(result, suite.known_secrets)
         self.assertEqual(report["environment"], "staging")
+        self.assertEqual(report["slow_threshold_ms"], 250.0)
         self.assertIn("Environment: staging", render_html(result, suite.known_secrets))
+        self.assertIn("Number(reportData.slow_threshold_ms)", render_html(result, suite.known_secrets))
         self.assertIn('name="Integration suite [staging]"', render_junit_xml(result, suite.known_secrets))
 
     def test_html_report_explains_failed_assertions(self) -> None:
@@ -159,6 +164,93 @@ class IntegrationTests(unittest.TestCase):
         self.assertIn('data-action="download-json"', html)
         self.assertIn('data-action="download-junit"', html)
         self.assertIn('data-attempts="1"', html)
+
+    def test_failure_previews_are_bounded_content_aware_and_redacted(self) -> None:
+        case = TestCase(
+            case_id="preview",
+            name="Preview",
+            method="GET",
+            url="https://example.test/preview",
+            headers={},
+            body=None,
+            timeout_seconds=1,
+            retries=0,
+            retry_delay_seconds=0,
+            retry_on_status=(),
+            retry_non_idempotent=False,
+            assertions=(AssertionSpec("status", {"equals": 200}),),
+        )
+        secret = "preview-secret"
+        long_body = (json.dumps({"token": secret, "payload": "x" * 3000}) + "\n").encode()
+        response_test = TestResult(
+            case=case,
+            passed=False,
+            response=HttpResponse(
+                500,
+                {"Content-Type": "Application/JSON; charset=utf-8"},
+                long_body,
+                1,
+                1,
+            ),
+            assertions=(AssertionResult("status", False, "response body was not healthy", 200, 500),),
+            started_at="2026-08-27T00:00:00+00:00",
+            finished_at="2026-08-27T00:00:00+00:00",
+        )
+        error_test = TestResult(
+            case=case,
+            passed=False,
+            response=HttpResponse(
+                None,
+                {},
+                b"",
+                1,
+                1,
+                ("request failed at /Users/tester/project/" + secret + " " + "e" * 1800),
+            ),
+            assertions=(AssertionResult("request", False, "request failed", actual="error"),),
+            started_at="2026-08-27T00:00:00+00:00",
+            finished_at="2026-08-27T00:00:00+00:00",
+        )
+        binary_test = TestResult(
+            case=case,
+            passed=False,
+            response=HttpResponse(
+                500,
+                {"Content-Type": "application/octet-stream"},
+                b"\x00\x01\x02" * 20,
+                1,
+                1,
+            ),
+            assertions=(AssertionResult("status", False, "binary response was not healthy", 200, 500),),
+            started_at="2026-08-27T00:00:00+00:00",
+            finished_at="2026-08-27T00:00:00+00:00",
+        )
+        result = SuiteResult(
+            "Preview safety",
+            (response_test, error_test, binary_test),
+            "2026-08-27T00:00:00+00:00",
+            "2026-08-27T00:00:00+00:00",
+            1,
+        )
+
+        report = build_report(result, (secret,))
+        response_preview = report["tests"][0]["response_preview"]
+        self.assertEqual(response_preview["content_type"], "application/json")
+        self.assertTrue(response_preview["truncated"])
+        self.assertLessEqual(len(response_preview["text"]), 2400)
+        serialized = json.dumps(report)
+        self.assertNotIn(secret, serialized)
+        self.assertNotIn("/Users/tester", serialized)
+        self.assertIn("[REDACTED]", response_preview["text"])
+        self.assertLessEqual(len(report["tests"][1]["error"]), 1200)
+        self.assertIn("[truncated]", report["tests"][1]["error"])
+        self.assertEqual(
+            report["tests"][2]["response_preview"]["text"],
+            "[binary response body omitted]",
+        )
+        html = render_html(result, (secret,))
+        self.assertIn("Response preview · application/json", html)
+        self.assertIn("Response preview · application/octet-stream", html)
 
     def test_resolved_environment_secret_is_redacted_in_every_report(self) -> None:
         document = self.suite_document()
@@ -427,6 +519,75 @@ class IntegrationTests(unittest.TestCase):
                 exit_code = main(["validate", str(suite_path)])
         self.assertEqual(exit_code, 2)
         self.assertIn("HTTP integers", error.getvalue())
+
+
+class OrderWorkflowIntegrationTests(unittest.TestCase):
+    def test_order_demo_rejects_non_loopback_bind_address(self) -> None:
+        with self.assertRaisesRegex(ValueError, "only binds to loopback"):
+            create_order_server(host="0.0.0.0", port=0)
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.server = create_order_server(port=0)
+        cls.port = cls.server.server_port
+        cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
+        cls.thread.start()
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        cls.server.shutdown()
+        cls.server.server_close()
+        cls.thread.join(timeout=2)
+
+    def setUp(self) -> None:
+        with self.server.state_lock:  # type: ignore[attr-defined]
+            self.server.orders.clear()  # type: ignore[attr-defined]
+            self.server.next_order_id = 1001  # type: ignore[attr-defined]
+
+    def suite(self, name: str) -> object:
+        path = Path(__file__).parents[1] / "examples" / "order-workflow" / name
+        return load_suite(path, {"base_url": f"http://127.0.0.1:{self.port}"})
+
+    def test_order_lifecycle_success_cleans_up_state(self) -> None:
+        suite = self.suite("order-workflow.json")
+        result = SuiteRunner().run(suite)
+
+        self.assertTrue(result.is_successful)
+        self.assertEqual(result.total, 7)
+        self.assertEqual(result.passed, 7)
+        self.assertEqual([item.case.case_id for item in result.tests], [
+            "login", "create", "read", "update", "verify", "audit", "cleanup"
+        ])
+        self.assertEqual(len(self.server.orders), 0)  # type: ignore[attr-defined]
+        serialized = json.dumps(build_report(result, suite.known_secrets))
+        self.assertNotIn("order-demo-access-token", serialized)
+
+    def test_intentional_assertion_failure_blocks_audit_but_runs_cleanup(self) -> None:
+        suite = self.suite("failure-workflow.json")
+        result = SuiteRunner().run(suite)
+
+        self.assertFalse(result.is_successful)
+        self.assertEqual(result.failed, 1)
+        self.assertEqual(result.blocked, 1)
+        self.assertEqual(result.passed, 5)
+        self.assertEqual([item.case.case_id for item in result.tests if item.status == "blocked"], ["audit"])
+        self.assertEqual(result.tests[-1].status, "passed")
+        self.assertEqual(len(self.server.orders), 0)  # type: ignore[attr-defined]
+
+    def test_transport_error_does_not_send_broken_cleanup_request(self) -> None:
+        suite = self.suite("order-workflow.json")
+        cases = list(suite.tests)
+        create_index = next(index for index, case in enumerate(cases) if case.case_id == "create")
+        cases[create_index] = replace(cases[create_index], url="http://127.0.0.1:1/orders")
+        suite = replace(suite, tests=tuple(cases))
+
+        result = SuiteRunner().run(suite)
+
+        self.assertEqual(result.errors, 1)
+        self.assertEqual(result.blocked, 5)
+        self.assertEqual(len(self.server.orders), 0)  # type: ignore[attr-defined]
+        self.assertEqual(result.tests[-1].status, "blocked")
+        self.assertIn("capture", result.tests[-1].response.error or "")
 
 
 if __name__ == "__main__":

@@ -86,6 +86,25 @@ class ConfigTests(unittest.TestCase):
             suite = load_suite(path)
         self.assertIn("resolved-env-secret", suite.known_secrets)
 
+    def test_suite_config_hash_excludes_secret_values(self) -> None:
+        document = valid_document()
+        document["variables"]["api_token"] = "${HASHED_TOKEN}"  # type: ignore[index]
+        temporary, path = self.write(document)
+        self.addCleanup(temporary.cleanup)
+        with patch.dict(os.environ, {"HASHED_TOKEN": "first-secret-value"}):
+            first = load_suite(path)
+        with patch.dict(os.environ, {"HASHED_TOKEN": "second-secret-value"}):
+            second = load_suite(path)
+        self.assertEqual(first.config_hash, second.config_hash)
+        self.assertNotEqual(first.known_secrets, second.known_secrets)
+
+        changed = dict(document)
+        changed["description"] = "changed"
+        other_temporary, other_path = self.write(changed)
+        self.addCleanup(other_temporary.cleanup)
+        with patch.dict(os.environ, {"HASHED_TOKEN": "first-secret-value"}):
+            self.assertNotEqual(first.config_hash, load_suite(other_path).config_hash)
+
     def test_duplicate_ids_are_rejected(self) -> None:
         document = valid_document()
         document["tests"] = [document["tests"][0], document["tests"][0]]  # type: ignore[index]
@@ -158,6 +177,82 @@ class ConfigTests(unittest.TestCase):
         self.addCleanup(temporary.cleanup)
         with self.assertRaisesRegex(ConfigError, "must not exceed 30"):
             load_suite(path)
+
+    def test_response_limit_defaults_and_per_test_override(self) -> None:
+        document = valid_document()
+        document["defaults"]["max_response_bytes"] = 4096  # type: ignore[index]
+        document["tests"][0]["max_response_bytes"] = 1024  # type: ignore[index]
+        temporary, path = self.write(document)
+        self.addCleanup(temporary.cleanup)
+        suite = load_suite(path)
+        self.assertEqual(suite.tests[0].max_response_bytes, 1024)
+
+    def test_response_limit_must_be_within_safety_cap(self) -> None:
+        document = valid_document()
+        document["defaults"]["max_response_bytes"] = 0  # type: ignore[index]
+        temporary, path = self.write(document)
+        self.addCleanup(temporary.cleanup)
+        with self.assertRaisesRegex(ConfigError, "positive integer"):
+            load_suite(path)
+
+        document["defaults"]["max_response_bytes"] = 2 * 1024 * 1024 + 1  # type: ignore[index]
+        temporary, path = self.write(document)
+        self.addCleanup(temporary.cleanup)
+        with self.assertRaisesRegex(ConfigError, "must not exceed"):
+            load_suite(path)
+
+    def test_unknown_suite_field_is_rejected_with_its_path(self) -> None:
+        document = valid_document()
+        document["retrys"] = 1
+        temporary, path = self.write(document)
+        self.addCleanup(temporary.cleanup)
+        with self.assertRaisesRegex(ConfigError, "Suite contains unsupported field.*retrys"):
+            load_suite(path)
+
+    def test_unknown_defaults_field_is_rejected(self) -> None:
+        document = valid_document()
+        document["defaults"]["timeuot_seconds"] = 2  # type: ignore[index]
+        temporary, path = self.write(document)
+        self.addCleanup(temporary.cleanup)
+        with self.assertRaisesRegex(ConfigError, "defaults contains unsupported field.*timeuot_seconds"):
+            load_suite(path)
+
+    def test_unknown_test_field_is_rejected(self) -> None:
+        document = valid_document()
+        document["tests"][0]["asertions"] = []  # type: ignore[index]
+        temporary, path = self.write(document)
+        self.addCleanup(temporary.cleanup)
+        with self.assertRaisesRegex(ConfigError, r"tests\[0\] contains unsupported field.*asertions"):
+            load_suite(path)
+
+    def test_unknown_assertion_field_is_rejected(self) -> None:
+        document = valid_document()
+        document["tests"][0]["assertions"][0]["equlas"] = 200  # type: ignore[index]
+        temporary, path = self.write(document)
+        self.addCleanup(temporary.cleanup)
+        with self.assertRaisesRegex(ConfigError, r"tests\[0\]\.assertions\[0\] contains unsupported field.*equlas"):
+            load_suite(path)
+
+    def test_ambiguous_json_predicates_are_rejected(self) -> None:
+        document = valid_document()
+        document["tests"][0]["assertions"][0] = {  # type: ignore[index]
+            "type": "json_path",
+            "path": "status",
+            "exists": True,
+            "equals": "ok",
+        }
+        temporary, path = self.write(document)
+        self.addCleanup(temporary.cleanup)
+        with self.assertRaisesRegex(ConfigError, "at most one JSON predicate"):
+            load_suite(path)
+
+    def test_slow_threshold_is_carried_from_suite(self) -> None:
+        document = valid_document()
+        document["slow_threshold_ms"] = 250
+        temporary, path = self.write(document)
+        self.addCleanup(temporary.cleanup)
+        suite = load_suite(path)
+        self.assertEqual(suite.slow_threshold_ms, 250.0)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 2,
+  "name": "Order lifecycle intentional failure",
+  "description": "Intentional contract failure: audit is blocked and cleanup still runs.",
+  "environment": "local order failure demo",
+  "workers": 3,
+  "variables": {"base_url": "http://127.0.0.1:8766"},
+  "defaults": {
+    "timeout_seconds": 2,
+    "retries": 0,
+    "retry_delay_seconds": 0,
+    "headers": {"Accept": "application/json"}
+  },
+  "tests": [
+    {"id": "login", "name": "Authenticate demo user", "method": "POST", "url": "{{base_url}}/login", "json": {"username": "demo", "password": "demo"}, "extract": {"access_token": {"from": "json", "path": "access_token", "secret": true}}, "assertions": [{"type": "status", "equals": 200}]},
+    {"id": "create", "name": "Create pending order", "method": "POST", "url": "{{base_url}}/orders", "depends_on": ["login"], "headers": {"Authorization": "Bearer {{steps.login.access_token}}"}, "json": {"item": "portfolio-review", "quantity": 1}, "extract": {"order_id": {"from": "json", "path": "data.id"}}, "assertions": [{"type": "status", "equals": 201}]},
+    {"id": "read", "name": "Read the created order", "method": "GET", "url": "{{base_url}}/orders/{{steps.create.order_id}}", "depends_on": ["login", "create"], "headers": {"Authorization": "Bearer {{steps.login.access_token}}"}, "assertions": [{"type": "status", "equals": 200}]},
+    {"id": "update", "name": "Move order to shipped", "method": "PATCH", "url": "{{base_url}}/orders/{{steps.create.order_id}}", "depends_on": ["login", "create", "read"], "headers": {"Authorization": "Bearer {{steps.login.access_token}}"}, "json": {"status": "shipped"}, "assertions": [{"type": "status", "equals": 200}]},
+    {"id": "verify", "name": "Verify shipped status (intentional failure)", "method": "GET", "url": "{{base_url}}/orders/{{steps.create.order_id}}", "depends_on": ["login", "create", "update"], "headers": {"Authorization": "Bearer {{steps.login.access_token}}"}, "assertions": [{"type": "json_path", "path": "data.status", "equals": "delivered"}]},
+    {"id": "audit", "name": "Audit blocked after failed verification", "method": "GET", "url": "{{base_url}}/orders/{{steps.create.order_id}}", "depends_on": ["login", "create", "verify"], "headers": {"Authorization": "Bearer {{steps.login.access_token}}"}, "assertions": [{"type": "status", "equals": 200}]},
+    {"id": "cleanup", "name": "Delete demo order after failure", "method": "DELETE", "url": "{{base_url}}/orders/{{steps.create.order_id}}", "depends_on": ["login", "create", "verify", "audit"], "run_if": "always", "cleanup": true, "headers": {"Authorization": "Bearer {{steps.login.access_token}}"}, "assertions": [{"type": "status", "equals": 204}]}
+  ]
+}

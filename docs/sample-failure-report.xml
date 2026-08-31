@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="QA Sentinel Intentional Failure Example [local failure demo]" tests="6" failures="6" errors="0" time="0.115" timestamp="2026-08-30T07:58:37.282+00:00">
+  <properties>
+    <property name="environment" value="local failure demo" />
+    <property name="interrupted" value="false" />
+    <property name="run_id" value="3b7d1468b5164577b5f0cfc404a2c8cc" />
+    <property name="tool_version" value="1.2.0" />
+    <property name="suite_config_hash" value="3a577f082d933d37" />
+    <property name="workers" value="4" />
+    <property name="suite_schema_version" value="2" />
+  </properties>
+  <testcase classname="qa_sentinel.api" name="Status contract returns the expected code" time="0.016">
+    <failure message="status 418 did not match 200" type="AssertionError">status 418 did not match 200</failure>
+    <system-out>GET http://127.0.0.1:60472/status/418?token=[REDACTED]
+status=418 attempts=1 latency_ms=15.991</system-out>
+  </testcase>
+  <testcase classname="qa_sentinel.api" name="JSON value matches the contract" time="0.022">
+    <failure message="path 'data.id' did not match expected value" type="AssertionError">path 'data.id' did not match expected value</failure>
+    <system-out>GET http://127.0.0.1:60472/users/1
+status=200 attempts=1 latency_ms=21.784</system-out>
+  </testcase>
+  <testcase classname="qa_sentinel.api" name="Required JSON path is present" time="0.020">
+    <failure message="path 'data.plan' existence was False, expected True" type="AssertionError">path 'data.plan' existence was False, expected True</failure>
+    <system-out>GET http://127.0.0.1:60472/users/1
+status=200 attempts=1 latency_ms=19.786</system-out>
+  </testcase>
+  <testcase classname="qa_sentinel.api" name="Response header matches the contract" time="0.020">
+    <failure message="header 'X-Demo-API' did not match" type="AssertionError">header 'X-Demo-API' did not match</failure>
+    <system-out>GET http://127.0.0.1:60472/health
+status=200 attempts=1 latency_ms=20.463</system-out>
+  </testcase>
+  <testcase classname="qa_sentinel.api" name="Endpoint stays inside the latency budget" time="0.098">
+    <failure message="latency 98.5 ms exceeded 1 ms" type="AssertionError">latency 98.5 ms exceeded 1 ms</failure>
+    <system-out>GET http://127.0.0.1:60472/slow?ms=80
+status=200 attempts=1 latency_ms=98.472</system-out>
+  </testcase>
+  <testcase classname="qa_sentinel.api" name="Transient outage recovers within the retry budget" time="0.008">
+    <failure message="status 503 did not match 200" type="AssertionError">status 503 did not match 200</failure>
+    <system-out>GET http://127.0.0.1:60472/unstable?key=failure-demo&amp;failures=5
+status=503 attempts=2 latency_ms=8.398</system-out>
+  </testcase>
+</testsuite>

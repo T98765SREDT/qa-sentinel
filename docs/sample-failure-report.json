@@ -1,173 +1,285 @@
 {
-  "schema_version": "1.0",
+  "schema_version": 2,
+  "run_id": "3b7d1468b5164577b5f0cfc404a2c8cc",
+  "tool_version": "1.2.0",
+  "suite_schema_version": 2,
   "suite": "QA Sentinel Intentional Failure Example",
   "description": "Intentional failure example. No production system was tested.",
   "environment": "local failure demo",
-  "started_at": "2026-08-28T13:58:08.333+00:00",
-  "finished_at": "2026-08-28T13:58:08.441+00:00",
-  "duration_ms": 108.2,
+  "environment_config_hash": null,
+  "suite_config_hash": "3a577f082d933d37",
+  "provenance": {
+    "git_sha": null,
+    "git_branch": null,
+    "ci_url": null
+  },
+  "execution": {
+    "workers": 4,
+    "selected_tags": [],
+    "retry": {
+      "max_retries": 1,
+      "retry_on_status": [
+        503
+      ],
+      "retry_non_idempotent": false
+    }
+  },
+  "secret_sources": [],
+  "started_at": "2026-08-30T07:58:37.282+00:00",
+  "finished_at": "2026-08-30T07:58:37.397+00:00",
+  "duration_ms": 115.101,
+  "slow_threshold_ms": 500.0,
+  "interrupted": false,
   "summary": {
     "total": 6,
     "passed": 0,
     "failed": 6,
+    "errors": 0,
+    "blocked": 0,
+    "skipped": 0,
     "success_rate": 0.0
   },
+  "capture_metadata": [],
   "tests": [
     {
       "id": "status-mismatch",
+      "request_id": "status-mismatch",
       "name": "Status contract returns the expected code",
       "method": "GET",
-      "url": "http://127.0.0.1:8876/status/418?token=[REDACTED]",
+      "url": "http://127.0.0.1:60472/status/418?token=[REDACTED]",
       "tags": [
         "failure",
         "status"
       ],
       "passed": false,
-      "status": 418,
-      "latency_ms": 12.049,
+      "status": "failed",
+      "response_status": 418,
+      "response_size_bytes": 15,
+      "response_content_type": "application/json",
+      "latency_ms": 15.991,
       "attempts": 1,
       "error": null,
-      "started_at": "2026-08-28T13:58:08.333+00:00",
-      "finished_at": "2026-08-28T13:58:08.347+00:00",
+      "response_preview": {
+        "content_type": "application/json",
+        "byte_length": 15,
+        "text": "{\"status\": 418}",
+        "truncated": false
+      },
+      "started_at": "2026-08-30T07:58:37.282+00:00",
+      "finished_at": "2026-08-30T07:58:37.298+00:00",
       "assertions": [
         {
+          "path": "tests[0].assertions[0]",
           "type": "status",
           "passed": false,
           "message": "status 418 did not match 200",
           "expected": 200,
           "actual": 418
         }
-      ]
+      ],
+      "reproduction": {
+        "curl": "curl --request GET --header 'Accept: application/json' --header 'Authorization: [REDACTED]' --max-time 2 'http://127.0.0.1:60472/status/418?token=[REDACTED]'"
+      }
     },
     {
       "id": "json-mismatch",
+      "request_id": "json-mismatch",
       "name": "JSON value matches the contract",
       "method": "GET",
-      "url": "http://127.0.0.1:8876/users/1",
+      "url": "http://127.0.0.1:60472/users/1",
       "tags": [
         "failure",
         "json"
       ],
       "passed": false,
-      "status": 200,
-      "latency_ms": 12.278,
+      "status": "failed",
+      "response_status": 200,
+      "response_size_bytes": 75,
+      "response_content_type": "application/json",
+      "latency_ms": 21.784,
       "attempts": 1,
       "error": null,
-      "started_at": "2026-08-28T13:58:08.333+00:00",
-      "finished_at": "2026-08-28T13:58:08.346+00:00",
+      "response_preview": {
+        "content_type": "application/json",
+        "byte_length": 75,
+        "text": "{\"data\": {\"id\": 1, \"name\": \"Ada Lovelace\", \"roles\": [\"admin\", \"engineer\"]}}",
+        "truncated": false
+      },
+      "started_at": "2026-08-30T07:58:37.282+00:00",
+      "finished_at": "2026-08-30T07:58:37.304+00:00",
       "assertions": [
         {
+          "path": "tests[1].assertions[0]",
           "type": "json_path",
           "passed": false,
           "message": "path 'data.id' did not match expected value",
           "expected": 99,
           "actual": 1
         }
-      ]
+      ],
+      "reproduction": {
+        "curl": "curl --request GET --header 'Accept: application/json' --header 'Authorization: [REDACTED]' --max-time 2 http://127.0.0.1:60472/users/1"
+      }
     },
     {
       "id": "missing-path",
+      "request_id": "missing-path",
       "name": "Required JSON path is present",
       "method": "GET",
-      "url": "http://127.0.0.1:8876/users/1",
+      "url": "http://127.0.0.1:60472/users/1",
       "tags": [
         "failure",
         "json"
       ],
       "passed": false,
-      "status": 200,
-      "latency_ms": 11.678,
+      "status": "failed",
+      "response_status": 200,
+      "response_size_bytes": 75,
+      "response_content_type": "application/json",
+      "latency_ms": 19.786,
       "attempts": 1,
       "error": null,
-      "started_at": "2026-08-28T13:58:08.334+00:00",
-      "finished_at": "2026-08-28T13:58:08.346+00:00",
+      "response_preview": {
+        "content_type": "application/json",
+        "byte_length": 75,
+        "text": "{\"data\": {\"id\": 1, \"name\": \"Ada Lovelace\", \"roles\": [\"admin\", \"engineer\"]}}",
+        "truncated": false
+      },
+      "started_at": "2026-08-30T07:58:37.282+00:00",
+      "finished_at": "2026-08-30T07:58:37.302+00:00",
       "assertions": [
         {
+          "path": "tests[2].assertions[0]",
           "type": "json_path",
           "passed": false,
           "message": "path 'data.plan' existence was False, expected True",
           "expected": true,
           "actual": false
         }
-      ]
+      ],
+      "reproduction": {
+        "curl": "curl --request GET --header 'Accept: application/json' --header 'Authorization: [REDACTED]' --max-time 2 http://127.0.0.1:60472/users/1"
+      }
     },
     {
       "id": "header-mismatch",
+      "request_id": "header-mismatch",
       "name": "Response header matches the contract",
       "method": "GET",
-      "url": "http://127.0.0.1:8876/health",
+      "url": "http://127.0.0.1:60472/health",
       "tags": [
         "failure",
         "headers"
       ],
       "passed": false,
-      "status": 200,
-      "latency_ms": 11.874,
+      "status": "failed",
+      "response_status": 200,
+      "response_size_bytes": 59,
+      "response_content_type": "application/json",
+      "latency_ms": 20.463,
       "attempts": 1,
       "error": null,
-      "started_at": "2026-08-28T13:58:08.334+00:00",
-      "finished_at": "2026-08-28T13:58:08.346+00:00",
+      "response_preview": {
+        "content_type": "application/json",
+        "byte_length": 59,
+        "text": "{\"status\": \"ok\", \"service\": \"demo-api\", \"version\": \"1.0.0\"}",
+        "truncated": false
+      },
+      "started_at": "2026-08-30T07:58:37.282+00:00",
+      "finished_at": "2026-08-30T07:58:37.303+00:00",
       "assertions": [
         {
+          "path": "tests[3].assertions[0]",
           "type": "header",
           "passed": false,
           "message": "header 'X-Demo-API' did not match",
           "expected": "other-service",
           "actual": "qa-sentinel"
         }
-      ]
+      ],
+      "reproduction": {
+        "curl": "curl --request GET --header 'Accept: application/json' --header 'Authorization: [REDACTED]' --max-time 2 http://127.0.0.1:60472/health"
+      }
     },
     {
       "id": "latency-exceeded",
+      "request_id": "latency-exceeded",
       "name": "Endpoint stays inside the latency budget",
       "method": "GET",
-      "url": "http://127.0.0.1:8876/slow?ms=80",
+      "url": "http://127.0.0.1:60472/slow?ms=80",
       "tags": [
         "failure",
         "performance"
       ],
       "passed": false,
-      "status": 200,
-      "latency_ms": 95.601,
+      "status": "failed",
+      "response_status": 200,
+      "response_size_bytes": 17,
+      "response_content_type": "application/json",
+      "latency_ms": 98.472,
       "attempts": 1,
       "error": null,
-      "started_at": "2026-08-28T13:58:08.346+00:00",
-      "finished_at": "2026-08-28T13:58:08.441+00:00",
+      "response_preview": {
+        "content_type": "application/json",
+        "byte_length": 17,
+        "text": "{\"waited_ms\": 80}",
+        "truncated": false
+      },
+      "started_at": "2026-08-30T07:58:37.298+00:00",
+      "finished_at": "2026-08-30T07:58:37.397+00:00",
       "assertions": [
         {
+          "path": "tests[4].assertions[0]",
           "type": "latency",
           "passed": false,
-          "message": "latency 95.6 ms exceeded 1 ms",
+          "message": "latency 98.5 ms exceeded 1 ms",
           "expected": 1.0,
-          "actual": 95.601
+          "actual": 98.472
         }
-      ]
+      ],
+      "reproduction": {
+        "curl": "curl --request GET --header 'Accept: application/json' --header 'Authorization: [REDACTED]' --max-time 2 'http://127.0.0.1:60472/slow?ms=80'"
+      }
     },
     {
       "id": "retry-exhausted",
+      "request_id": "retry-exhausted",
       "name": "Transient outage recovers within the retry budget",
       "method": "GET",
-      "url": "http://127.0.0.1:8876/unstable?key=failure-demo&failures=5",
+      "url": "http://127.0.0.1:60472/unstable?key=failure-demo&failures=5",
       "tags": [
         "failure",
         "retry"
       ],
       "passed": false,
-      "status": 503,
-      "latency_ms": 6.356,
+      "status": "failed",
+      "response_status": 503,
+      "response_size_bytes": 33,
+      "response_content_type": "application/json",
+      "latency_ms": 8.398,
       "attempts": 2,
       "error": null,
-      "started_at": "2026-08-28T13:58:08.346+00:00",
-      "finished_at": "2026-08-28T13:58:08.418+00:00",
+      "response_preview": {
+        "content_type": "application/json",
+        "byte_length": 33,
+        "text": "{\"status\": \"retry\", \"attempt\": 2}",
+        "truncated": false
+      },
+      "started_at": "2026-08-30T07:58:37.302+00:00",
+      "finished_at": "2026-08-30T07:58:37.378+00:00",
       "assertions": [
         {
+          "path": "tests[5].assertions[0]",
           "type": "status",
           "passed": false,
           "message": "status 503 did not match 200",
           "expected": 200,
           "actual": 503
         }
-      ]
+      ],
+      "reproduction": {
+        "curl": "curl --request GET --header 'Accept: application/json' --header 'Authorization: [REDACTED]' --max-time 2 'http://127.0.0.1:60472/unstable?key=failure-demo&failures=5'"
+      }
     }
   ]
 }

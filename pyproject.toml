@@ -19,6 +19,14 @@ classifiers = [
 ]
 dependencies = []
 
+[project.optional-dependencies]
+yaml = ["PyYAML>=6.0,<7"]
+
+[project.urls]
+Homepage = "https://github.com/T98765SREDT/qa-sentinel"
+Repository = "https://github.com/T98765SREDT/qa-sentinel"
+Issues = "https://github.com/T98765SREDT/qa-sentinel/issues"
+
 [project.scripts]
 qa-sentinel = "qa_sentinel.cli:entrypoint"
 

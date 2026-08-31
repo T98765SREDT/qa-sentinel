@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 2,
+  "name": "JobFlow API integration workflow",
+  "description": "Synthetic cross-project smoke workflow for the local JobFlow API.",
+  "environment": "local JobFlow integration",
+  "workers": 2,
+  "variables": {"base_url": "http://127.0.0.1:8765"},
+  "defaults": {
+    "timeout_seconds": 3,
+    "retries": 0,
+    "retry_delay_seconds": 0,
+    "headers": {"Accept": "application/json"}
+  },
+  "tests": [
+    {
+      "id": "health",
+      "name": "JobFlow health contract",
+      "method": "GET",
+      "url": "{{base_url}}/api/health",
+      "assertions": [
+        {"type": "status", "equals": 200},
+        {"type": "json_path", "path": "service", "equals": "jobflow"},
+        {"type": "json_path", "path": "schema_version", "exists": true}
+      ],
+      "tags": ["smoke", "contract"]
+    },
+    {
+      "id": "create",
+      "name": "Create a synthetic application",
+      "method": "POST",
+      "url": "{{base_url}}/api/applications",
+      "json": {
+        "company": "QA Sentinel Demo",
+        "role": "Integration Engineer",
+        "location": "Remote",
+        "work_mode": "Remote",
+        "status": "Wishlist",
+        "source": "QA Sentinel",
+        "url": "https://example.test/jobs/qa-sentinel-demo",
+        "notes": "Synthetic record created by the QA Sentinel integration suite."
+      },
+      "extract": {
+        "application_id": {"from": "json", "path": "id"},
+        "application_version": {"from": "json", "path": "version"}
+      },
+      "assertions": [
+        {"type": "status", "equals": 201},
+        {"type": "json_path", "path": "stage", "equals": "Wishlist"},
+        {"type": "json_path", "path": "version", "equals": 1}
+      ],
+      "tags": ["write", "setup"]
+    },
+    {
+      "id": "workspace",
+      "name": "Read the application workspace",
+      "method": "GET",
+      "url": "{{base_url}}/api/applications/{{steps.create.application_id}}/workspace",
+      "depends_on": ["create"],
+      "assertions": [
+        {"type": "status", "equals": 200},
+        {"type": "json_path", "path": "application.id", "exists": true},
+        {"type": "json_path", "path": "summary.activity_count", "equals": 1}
+      ],
+      "tags": ["read", "workspace"]
+    },
+    {
+      "id": "apply",
+      "name": "Move the application to Applied",
+      "method": "POST",
+      "url": "{{base_url}}/api/applications/{{steps.create.application_id}}/transitions",
+      "depends_on": ["create", "workspace"],
+      "json": {
+        "to_stage": "Applied",
+        "expected_version": "{{steps.create.application_version}}",
+        "request_id": "qa-sentinel-jobflow-apply"
+      },
+      "extract": {"applied_version": {"from": "json", "path": "application.version"}},
+      "assertions": [
+        {"type": "status", "equals": 200},
+        {"type": "json_path", "path": "application.stage", "equals": "Applied"},
+        {"type": "json_path", "path": "replayed", "equals": false}
+      ],
+      "tags": ["write", "lifecycle"]
+    },
+    {
+      "id": "stale-version",
+      "name": "Reject a stale lifecycle update",
+      "method": "POST",
+      "url": "{{base_url}}/api/applications/{{steps.create.application_id}}/transitions",
+      "depends_on": ["create", "apply"],
+      "json": {
+        "to_stage": "Interview",
+        "expected_version": "{{steps.create.application_version}}",
+        "request_id": "qa-sentinel-jobflow-stale"
+      },
+      "assertions": [
+        {"type": "status", "equals": 409},
+        {"type": "json_path", "path": "code", "equals": "VERSION_CONFLICT"},
+        {"type": "json_path", "path": "current.stage", "equals": "Applied"}
+      ],
+      "tags": ["concurrency", "contract"]
+    },
+    {
+      "id": "cleanup",
+      "name": "Delete the synthetic application",
+      "method": "DELETE",
+      "url": "{{base_url}}/api/applications/{{steps.create.application_id}}",
+      "depends_on": ["create", "apply", "stale-version"],
+      "run_if": "always",
+      "cleanup": true,
+      "assertions": [{"type": "status", "equals": 204}],
+      "tags": ["cleanup"]
+    }
+  ]
+}

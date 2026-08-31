@@ -1,0 +1,12 @@
+{
+  "name": "staging",
+  "description": "Reusable staging target; credentials stay in the shell or CI secret store.",
+  "variables": {
+    "base_url": "https://staging.example.com"
+  },
+  "secrets": {
+    "api_token": {
+      "from_env": "QA_API_TOKEN"
+    }
+  }
+}

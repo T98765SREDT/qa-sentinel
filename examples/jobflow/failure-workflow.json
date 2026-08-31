@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 2,
+  "name": "JobFlow intentional contract failure",
+  "description": "Synthetic failure path: an incorrect workspace expectation fails while cleanup still runs.",
+  "environment": "local JobFlow failure demo",
+  "workers": 2,
+  "variables": {"base_url": "http://127.0.0.1:8765"},
+  "defaults": {"timeout_seconds": 3, "retries": 0, "retry_delay_seconds": 0, "headers": {"Accept": "application/json"}},
+  "tests": [
+    {
+      "id": "create",
+      "name": "Create a synthetic application",
+      "method": "POST",
+      "url": "{{base_url}}/api/applications",
+      "json": {"company": "QA Sentinel Demo", "role": "Intentional Failure", "location": "Remote", "work_mode": "Remote", "status": "Wishlist", "source": "QA Sentinel"},
+      "extract": {"application_id": {"from": "json", "path": "id"}},
+      "assertions": [{"type": "status", "equals": 201}]
+    },
+    {
+      "id": "broken-contract",
+      "name": "Detect an intentionally wrong workspace contract",
+      "method": "GET",
+      "url": "{{base_url}}/api/applications/{{steps.create.application_id}}/workspace",
+      "depends_on": ["create"],
+      "assertions": [
+        {"type": "status", "equals": 200},
+        {"type": "json_path", "path": "application.stage", "equals": "Interview"}
+      ]
+    },
+    {
+      "id": "cleanup",
+      "name": "Delete the synthetic application after failure",
+      "method": "DELETE",
+      "url": "{{base_url}}/api/applications/{{steps.create.application_id}}",
+      "depends_on": ["create", "broken-contract"],
+      "run_if": "always",
+      "cleanup": true,
+      "assertions": [{"type": "status", "equals": 204}]
+    }
+  ]
+}

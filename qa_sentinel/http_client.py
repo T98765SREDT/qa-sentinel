@@ -11,6 +11,7 @@ import urllib.request
 from typing import Any
 from urllib.parse import urljoin, urlparse
 
+from .capture import CaptureStore, resolve_case_references
 from .models import (
     IDEMPOTENT_METHODS,
     MAX_RETRY_DELAY_SECONDS,
@@ -23,6 +24,29 @@ _SENSITIVE_HEADER = re.compile(
     r"authorization|proxy-authorization|cookie|token|api[-_]?key|secret|password|credential",
     re.IGNORECASE,
 )
+_RESPONSE_READ_CHUNK_BYTES = 64 * 1024
+
+
+class ResponseTooLargeError(ValueError):
+    """Raised when a response exceeds the configured memory safety limit."""
+
+
+def _read_bounded(stream: Any, limit: int) -> bytes:
+    """Read at most *limit* bytes and fail before buffering a larger body."""
+
+    chunks: list[bytes] = []
+    total = 0
+    while total <= limit:
+        chunk = stream.read(min(_RESPONSE_READ_CHUNK_BYTES, limit - total + 1))
+        if not chunk:
+            break
+        chunks.append(chunk)
+        total += len(chunk)
+        if total > limit:
+            raise ResponseTooLargeError(
+                f"response exceeded the {limit} byte limit"
+            )
+    return b"".join(chunks)
 
 
 def _origin(url: str) -> tuple[str, str, int]:
@@ -84,9 +108,13 @@ class HttpClient:
             return body.encode("utf-8")
         raise TypeError(f"Unsupported request body type: {type(body).__name__}")
 
-    def execute(self, case: TestCase) -> HttpResponse:
+    def execute(
+        self, case: TestCase, captures: CaptureStore | None = None
+    ) -> HttpResponse:
         """Execute *case*, retrying transient statuses and transport errors."""
 
+        if captures is not None:
+            case = resolve_case_references(case, captures)
         last_response: HttpResponse | None = None
         for attempt in range(1, case.retries + 2):
             headers = dict(case.headers)
@@ -105,7 +133,7 @@ class HttpClient:
             start = time.perf_counter()
             try:
                 with self._opener.open(request, timeout=case.timeout_seconds) as response:
-                    body = response.read()
+                    body = _read_bounded(response, case.max_response_bytes)
                     elapsed = (time.perf_counter() - start) * 1000
                     last_response = HttpResponse(
                         status=response.status,
@@ -114,14 +142,31 @@ class HttpClient:
                         elapsed_ms=elapsed,
                         attempts=attempt,
                     )
+            except ResponseTooLargeError as exc:
+                elapsed = (time.perf_counter() - start) * 1000
+                last_response = HttpResponse(
+                    status=getattr(response, "status", None),
+                    headers=dict(getattr(response, "headers", {}) or {}),
+                    body=b"",
+                    elapsed_ms=elapsed,
+                    attempts=attempt,
+                    error=str(exc),
+                )
             except urllib.error.HTTPError as exc:
                 elapsed = (time.perf_counter() - start) * 1000
+                try:
+                    body = _read_bounded(exc, case.max_response_bytes)
+                    error = None
+                except ResponseTooLargeError as read_error:
+                    body = b""
+                    error = str(read_error)
                 last_response = HttpResponse(
                     status=exc.code,
                     headers=dict(exc.headers.items()) if exc.headers else {},
-                    body=exc.read(),
+                    body=body,
                     elapsed_ms=elapsed,
                     attempts=attempt,
+                    error=error,
                 )
             except (urllib.error.URLError, TimeoutError, socket.timeout, OSError) as exc:
                 elapsed = (time.perf_counter() - start) * 1000
@@ -133,15 +178,20 @@ class HttpClient:
                     elapsed_ms=elapsed,
                     attempts=attempt,
                     error=f"{type(reason).__name__}: {reason}",
+                    retryable_error=True,
                 )
 
             method_allows_retry = (
                 case.method in IDEMPOTENT_METHODS or case.retry_non_idempotent
             )
+            retryable_response = last_response.retryable_error or (
+                last_response.error is None
+                and last_response.status in case.retry_on_status
+            )
             should_retry = (
                 attempt <= case.retries
                 and method_allows_retry
-                and (last_response.error is not None or last_response.status in case.retry_on_status)
+                and retryable_response
             )
             if not should_retry:
                 return last_response

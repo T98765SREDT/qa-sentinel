@@ -5,6 +5,10 @@ on:
     branches: [main]
     paths:
       - "docs/**"
+      - "qa_sentinel/**"
+      - "examples/**"
+      - "pyproject.toml"
+      - "README.md"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -26,6 +30,37 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Install current source
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install QA Sentinel
+        run: python -m pip install .
+      - name: Generate reports from current source
+        run: |
+          set -euo pipefail
+          python -m qa_sentinel serve-demo --port 8765 > /tmp/qa-sentinel-demo.log 2>&1 &
+          demo_pid=$!
+          trap 'kill "$demo_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 40); do
+            if curl --fail --silent http://127.0.0.1:8765/health >/dev/null; then
+              break
+            fi
+            sleep 0.25
+          done
+          curl --fail --silent http://127.0.0.1:8765/health >/dev/null
+          python -m qa_sentinel run examples/demo-suite.json \
+            --html docs/sample-report.html \
+            --json docs/sample-report.json \
+            --junit docs/sample-report.xml
+          set +e
+          python -m qa_sentinel run examples/failure-suite.json \
+            --html docs/sample-failure-report.html \
+            --json docs/sample-failure-report.json \
+            --junit docs/sample-failure-report.xml
+          failure_status=$?
+          set -e
+          test "$failure_status" -eq 1
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload static report
