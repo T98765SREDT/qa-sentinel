@@ -4,6 +4,11 @@ All notable changes to QA Sentinel are documented here. This project follows a l
 
 ## Unreleased
 
+## 1.3.1 — 2026-09-09
+
+- Made the transport-error integration coverage deterministic across hosted CI operating systems by injecting a synthetic client failure.
+- Hardened the Pages smoke check by downloading the deployed report before content assertions, avoiding `pipefail`/`grep -q` false negatives.
+
 ## 1.3.0 — 2026-09-09
 
 - Hardened CI with read-only repository permissions and cancellation of stale runs on the same ref.

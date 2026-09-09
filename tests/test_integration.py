@@ -582,14 +582,16 @@ class OrderWorkflowIntegrationTests(unittest.TestCase):
 
     def test_transport_error_does_not_send_broken_cleanup_request(self) -> None:
         suite = self.suite("order-workflow.json")
-        cases = list(suite.tests)
-        create_index = next(index for index, case in enumerate(cases) if case.case_id == "create")
-        # Port 0 is reserved for ephemeral server allocation, so it is a
-        # deterministic closed destination across hosted CI operating systems.
-        cases[create_index] = replace(cases[create_index], url="http://127.0.0.1:0/orders")
-        suite = replace(suite, tests=tuple(cases))
+        runner = SuiteRunner()
+        real_execute = runner.client.execute
 
-        result = SuiteRunner().run(suite)
+        def fail_create(case, captures=None):
+            if case.case_id == "create":
+                raise OSError("synthetic transport failure")
+            return real_execute(case, captures) if captures is not None else real_execute(case)
+
+        with patch.object(runner.client, "execute", side_effect=fail_create):
+            result = runner.run(suite)
 
         self.assertEqual(result.errors, 1)
         self.assertEqual(result.blocked, 5)

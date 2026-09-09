@@ -86,5 +86,9 @@ jobs:
         run: |
           set -euo pipefail
           test -n "$PAGE_URL"
-          curl --fail --silent --show-error --location --max-time 20 "$PAGE_URL" | grep -q "QA Sentinel"
-          curl --fail --silent --show-error --location --max-time 20 "${PAGE_URL%/}/sample-report.html" | grep -q "synthetic loopback API"
+          page_file="$RUNNER_TEMP/qa-sentinel-page.html"
+          report_file="$RUNNER_TEMP/qa-sentinel-sample-report.html"
+          curl --fail --silent --show-error --location --max-time 20 "$PAGE_URL" --output "$page_file"
+          grep -q "QA Sentinel" "$page_file"
+          curl --fail --silent --show-error --location --max-time 20 "${PAGE_URL%/}/sample-report.html" --output "$report_file"
+          grep -q "synthetic loopback API" "$report_file"

@@ -1,42 +1,42 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="QA Sentinel Intentional Failure Example [local failure demo]" tests="6" failures="6" errors="0" time="0.138" timestamp="2026-09-09T13:05:00.759+00:00">
+<testsuite name="QA Sentinel Intentional Failure Example [local failure demo]" tests="6" failures="6" errors="0" time="0.141" timestamp="2026-09-09T13:13:54.285+00:00">
   <properties>
     <property name="environment" value="local failure demo" />
     <property name="interrupted" value="false" />
-    <property name="run_id" value="3c8dd94b07804b7592e214f3b6e4964f" />
-    <property name="tool_version" value="1.3.0" />
+    <property name="run_id" value="cd9981d40d8b41ddb485ab377c225886" />
+    <property name="tool_version" value="1.3.1" />
     <property name="suite_config_hash" value="2c65c1131bb15b52" />
     <property name="workers" value="4" />
     <property name="suite_schema_version" value="2" />
   </properties>
-  <testcase classname="qa_sentinel.api" name="Status contract returns the expected code" time="0.031">
+  <testcase classname="qa_sentinel.api" name="Status contract returns the expected code" time="0.030">
     <failure message="status 418 did not match 200" type="AssertionError">status 418 did not match 200</failure>
     <system-out>GET http://127.0.0.1:8765/status/418?token=[REDACTED]
-status=418 attempts=1 latency_ms=30.914</system-out>
+status=418 attempts=1 latency_ms=30.347</system-out>
   </testcase>
-  <testcase classname="qa_sentinel.api" name="JSON value matches the contract" time="0.037">
+  <testcase classname="qa_sentinel.api" name="JSON value matches the contract" time="0.039">
     <failure message="path 'data.id' did not match expected value" type="AssertionError">path 'data.id' did not match expected value</failure>
     <system-out>GET http://127.0.0.1:8765/users/1
-status=200 attempts=1 latency_ms=37.345</system-out>
+status=200 attempts=1 latency_ms=38.855</system-out>
   </testcase>
-  <testcase classname="qa_sentinel.api" name="Required JSON path is present" time="0.036">
+  <testcase classname="qa_sentinel.api" name="Required JSON path is present" time="0.030">
     <failure message="path 'data.plan' existence was False, expected True" type="AssertionError">path 'data.plan' existence was False, expected True</failure>
     <system-out>GET http://127.0.0.1:8765/users/1
-status=200 attempts=1 latency_ms=36.014</system-out>
+status=200 attempts=1 latency_ms=30.257</system-out>
   </testcase>
-  <testcase classname="qa_sentinel.api" name="Response header matches the contract" time="0.030">
+  <testcase classname="qa_sentinel.api" name="Response header matches the contract" time="0.033">
     <failure message="header 'X-Demo-API' did not match" type="AssertionError">header 'X-Demo-API' did not match</failure>
     <system-out>GET http://127.0.0.1:8765/health
-status=200 attempts=1 latency_ms=30.452</system-out>
+status=200 attempts=1 latency_ms=32.789</system-out>
   </testcase>
-  <testcase classname="qa_sentinel.api" name="Endpoint stays inside the latency budget" time="0.107">
-    <failure message="latency 106.5 ms exceeded 1 ms" type="AssertionError">latency 106.5 ms exceeded 1 ms</failure>
+  <testcase classname="qa_sentinel.api" name="Endpoint stays inside the latency budget" time="0.110">
+    <failure message="latency 109.6 ms exceeded 1 ms" type="AssertionError">latency 109.6 ms exceeded 1 ms</failure>
     <system-out>GET http://127.0.0.1:8765/slow?ms=80
-status=200 attempts=1 latency_ms=106.540</system-out>
+status=200 attempts=1 latency_ms=109.564</system-out>
   </testcase>
-  <testcase classname="qa_sentinel.api" name="Transient outage recovers within the retry budget" time="0.011">
+  <testcase classname="qa_sentinel.api" name="Transient outage recovers within the retry budget" time="0.007">
     <failure message="status 503 did not match 200" type="AssertionError">status 503 did not match 200</failure>
     <system-out>GET http://127.0.0.1:8765/unstable?key=failure-demo&amp;failures=5
-status=503 attempts=2 latency_ms=11.145</system-out>
+status=503 attempts=2 latency_ms=6.933</system-out>
   </testcase>
 </testsuite>
