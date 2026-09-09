@@ -160,7 +160,11 @@ class IntegrationTests(unittest.TestCase):
         self.assertIn("<code>418</code>", html)
         self.assertIn("aria-pressed=\"true\"", html)
         self.assertIn("No tests match this view", html)
-        self.assertIn("Aug", html)
+        self.assertRegex(
+            html,
+            r'<time datetime="[^"]+">[A-Z][a-z]{2} [0-9]{1,2}, [0-9]{4} at [0-9]{2}:[0-9]{2}:[0-9]{2} UTC</time>',
+        )
+        self.assertIn('<a href="./">Back to overview</a>', html)
         self.assertIn('data-action="download-json"', html)
         self.assertIn('data-action="download-junit"', html)
         self.assertIn('data-attempts="1"', html)
