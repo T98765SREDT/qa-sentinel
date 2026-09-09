@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
-  "run_id": "cd9981d40d8b41ddb485ab377c225886",
-  "tool_version": "1.3.1",
+  "run_id": "31d235d1a3834be79b8986047dea96c5",
+  "tool_version": "1.3.2",
   "suite_schema_version": 2,
   "suite": "QA Sentinel Intentional Failure Example",
   "description": "Intentional failure example. No production system was tested.",
@@ -25,9 +25,9 @@
     }
   },
   "secret_sources": [],
-  "started_at": "2026-09-09T13:13:54.285+00:00",
-  "finished_at": "2026-09-09T13:13:54.426+00:00",
-  "duration_ms": 140.678,
+  "started_at": "2026-09-09T13:52:08.215+00:00",
+  "finished_at": "2026-09-09T13:52:08.338+00:00",
+  "duration_ms": 122.273,
   "slow_threshold_ms": 500.0,
   "interrupted": false,
   "summary": {
@@ -56,7 +56,7 @@
       "response_status": 418,
       "response_size_bytes": 15,
       "response_content_type": "application/json",
-      "latency_ms": 30.347,
+      "latency_ms": 21.978,
       "attempts": 1,
       "error": null,
       "response_preview": {
@@ -65,8 +65,8 @@
         "text": "{\"status\": 418}",
         "truncated": false
       },
-      "started_at": "2026-09-09T13:13:54.285+00:00",
-      "finished_at": "2026-09-09T13:13:54.321+00:00",
+      "started_at": "2026-09-09T13:52:08.216+00:00",
+      "finished_at": "2026-09-09T13:52:08.238+00:00",
       "assertions": [
         {
           "path": "tests[0].assertions[0]",
@@ -96,7 +96,7 @@
       "response_status": 200,
       "response_size_bytes": 75,
       "response_content_type": "application/json",
-      "latency_ms": 38.855,
+      "latency_ms": 28.493,
       "attempts": 1,
       "error": null,
       "response_preview": {
@@ -105,8 +105,8 @@
         "text": "{\"data\": {\"id\": 1, \"name\": \"Ada Lovelace\", \"roles\": [\"admin\", \"engineer\"]}}",
         "truncated": false
       },
-      "started_at": "2026-09-09T13:13:54.285+00:00",
-      "finished_at": "2026-09-09T13:13:54.324+00:00",
+      "started_at": "2026-09-09T13:52:08.216+00:00",
+      "finished_at": "2026-09-09T13:52:08.244+00:00",
       "assertions": [
         {
           "path": "tests[1].assertions[0]",
@@ -136,7 +136,7 @@
       "response_status": 200,
       "response_size_bytes": 75,
       "response_content_type": "application/json",
-      "latency_ms": 30.257,
+      "latency_ms": 25.753,
       "attempts": 1,
       "error": null,
       "response_preview": {
@@ -145,8 +145,8 @@
         "text": "{\"data\": {\"id\": 1, \"name\": \"Ada Lovelace\", \"roles\": [\"admin\", \"engineer\"]}}",
         "truncated": false
       },
-      "started_at": "2026-09-09T13:13:54.285+00:00",
-      "finished_at": "2026-09-09T13:13:54.316+00:00",
+      "started_at": "2026-09-09T13:52:08.216+00:00",
+      "finished_at": "2026-09-09T13:52:08.242+00:00",
       "assertions": [
         {
           "path": "tests[2].assertions[0]",
@@ -176,7 +176,7 @@
       "response_status": 200,
       "response_size_bytes": 59,
       "response_content_type": "application/json",
-      "latency_ms": 32.789,
+      "latency_ms": 26.746,
       "attempts": 1,
       "error": null,
       "response_preview": {
@@ -185,8 +185,8 @@
         "text": "{\"status\": \"ok\", \"service\": \"demo-api\", \"version\": \"1.0.0\"}",
         "truncated": false
       },
-      "started_at": "2026-09-09T13:13:54.286+00:00",
-      "finished_at": "2026-09-09T13:13:54.318+00:00",
+      "started_at": "2026-09-09T13:52:08.216+00:00",
+      "finished_at": "2026-09-09T13:52:08.243+00:00",
       "assertions": [
         {
           "path": "tests[3].assertions[0]",
@@ -216,7 +216,7 @@
       "response_status": 200,
       "response_size_bytes": 17,
       "response_content_type": "application/json",
-      "latency_ms": 109.564,
+      "latency_ms": 99.772,
       "attempts": 1,
       "error": null,
       "response_preview": {
@@ -225,16 +225,16 @@
         "text": "{\"waited_ms\": 80}",
         "truncated": false
       },
-      "started_at": "2026-09-09T13:13:54.316+00:00",
-      "finished_at": "2026-09-09T13:13:54.425+00:00",
+      "started_at": "2026-09-09T13:52:08.238+00:00",
+      "finished_at": "2026-09-09T13:52:08.338+00:00",
       "assertions": [
         {
           "path": "tests[4].assertions[0]",
           "type": "latency",
           "passed": false,
-          "message": "latency 109.6 ms exceeded 1 ms",
+          "message": "latency 99.8 ms exceeded 1 ms",
           "expected": 1.0,
-          "actual": 109.564
+          "actual": 99.772
         }
       ],
       "reproduction": {
@@ -256,7 +256,7 @@
       "response_status": 503,
       "response_size_bytes": 33,
       "response_content_type": "application/json",
-      "latency_ms": 6.933,
+      "latency_ms": 8.008,
       "attempts": 2,
       "error": null,
       "response_preview": {
@@ -265,8 +265,8 @@
         "text": "{\"status\": \"retry\", \"attempt\": 2}",
         "truncated": false
       },
-      "started_at": "2026-09-09T13:13:54.318+00:00",
-      "finished_at": "2026-09-09T13:13:54.402+00:00",
+      "started_at": "2026-09-09T13:52:08.242+00:00",
+      "finished_at": "2026-09-09T13:52:08.319+00:00",
       "assertions": [
         {
           "path": "tests[5].assertions[0]",

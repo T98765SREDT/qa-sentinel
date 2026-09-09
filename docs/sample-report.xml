@@ -1,32 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="QA Sentinel Demo Regression Suite [local demo]" tests="5" failures="0" errors="0" time="0.099" timestamp="2026-09-09T13:13:38.448+00:00">
+<testsuite name="QA Sentinel Demo Regression Suite [local demo]" tests="5" failures="0" errors="0" time="0.096" timestamp="2026-09-09T13:52:08.044+00:00">
   <properties>
     <property name="environment" value="local demo" />
     <property name="interrupted" value="false" />
-    <property name="run_id" value="b83988dfb150420b80688a4d539100fa" />
-    <property name="tool_version" value="1.3.1" />
+    <property name="run_id" value="a3d36e24a80247d198d1869c0de186ff" />
+    <property name="tool_version" value="1.3.2" />
     <property name="suite_config_hash" value="26a3084e012e0ae7" />
     <property name="workers" value="4" />
     <property name="suite_schema_version" value="2" />
   </properties>
-  <testcase classname="qa_sentinel.api" name="Service health and version contract" time="0.028">
+  <testcase classname="qa_sentinel.api" name="Service health and version contract" time="0.031">
     <system-out>GET http://127.0.0.1:8765/health?token=[REDACTED]
-status=200 attempts=1 latency_ms=28.358</system-out>
+status=200 attempts=1 latency_ms=31.362</system-out>
   </testcase>
-  <testcase classname="qa_sentinel.api" name="Nested user response contract" time="0.028">
+  <testcase classname="qa_sentinel.api" name="Nested user response contract" time="0.035">
     <system-out>GET http://127.0.0.1:8765/users/1
-status=200 attempts=1 latency_ms=27.937</system-out>
+status=200 attempts=1 latency_ms=34.631</system-out>
   </testcase>
-  <testcase classname="qa_sentinel.api" name="POST body serialization and echo" time="0.041">
+  <testcase classname="qa_sentinel.api" name="POST body serialization and echo" time="0.034">
     <system-out>POST http://127.0.0.1:8765/echo
-status=201 attempts=1 latency_ms=41.327</system-out>
+status=201 attempts=1 latency_ms=34.366</system-out>
   </testcase>
-  <testcase classname="qa_sentinel.api" name="Transient failure recovers after retry" time="0.015">
+  <testcase classname="qa_sentinel.api" name="Transient failure recovers after retry" time="0.004">
     <system-out>GET http://127.0.0.1:8765/unstable?key=quickstart&amp;failures=1
-status=200 attempts=2 latency_ms=15.344</system-out>
+status=200 attempts=2 latency_ms=4.354</system-out>
   </testcase>
-  <testcase classname="qa_sentinel.api" name="Endpoint stays within latency budget" time="0.054">
+  <testcase classname="qa_sentinel.api" name="Endpoint stays within latency budget" time="0.052">
     <system-out>GET http://127.0.0.1:8765/slow?ms=30
-status=200 attempts=1 latency_ms=54.451</system-out>
+status=200 attempts=1 latency_ms=51.651</system-out>
   </testcase>
 </testsuite>

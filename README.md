@@ -10,7 +10,7 @@
 
 QA Sentinel is a dependency-free Python CLI for small API regression suites. It validates response contracts, runs independent checks concurrently, retries eligible transient failures, and writes reports that are suitable for local review or CI artifacts.
 
-[View the passing sample report](docs/sample-report.html) · [View the intentional failure report](docs/sample-failure-report.html) · [Browse the source](https://github.com/T98765SREDT/qa-sentinel) · [Review the security policy](SECURITY.md)
+[View the passing sample report](docs/sample-report.html) · [View the intentional failure report](docs/sample-failure-report.html) · [Read the report walkthrough](docs/report-demo.md) · [Browse the source](https://github.com/T98765SREDT/qa-sentinel) · [Review the security policy](SECURITY.md)
 
 ![QA Sentinel HTML report from the synthetic local demo](docs/qa-sentinel-report.png)
 

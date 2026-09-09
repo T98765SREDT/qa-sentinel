@@ -4,6 +4,11 @@ All notable changes to QA Sentinel are documented here. This project follows a l
 
 ## Unreleased
 
+## 1.3.2 — 2026-09-09
+
+- Added a report walkthrough that explains the passing and intentional-failure demos, the HTML/JSON/JUnit artifact roles, and the boundary between synthetic loopback evidence and production monitoring.
+- Refreshed the public demo landing page with direct artifact links and a short interpretation guide.
+
 ## 1.3.1 — 2026-09-09
 
 - Made the transport-error integration coverage deterministic across hosted CI operating systems by injecting a synthetic client failure.

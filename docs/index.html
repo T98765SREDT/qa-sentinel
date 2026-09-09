@@ -39,6 +39,7 @@
       <div class="actions">
         <a class="button" href="sample-report.html">Open interactive report</a>
         <a class="button secondary" href="sample-failure-report.html">Inspect failure diagnostics</a>
+        <a class="button secondary" href="report-demo.html">Read the walkthrough</a>
         <a class="button secondary" href="https://github.com/T98765SREDT/qa-sentinel">View source on GitHub</a>
       </div>
       <section class="stats" aria-label="Sample report summary">
@@ -48,6 +49,8 @@
         <div class="stat"><span>Runtime</span><strong>CI-generated</strong></div>
       </section>
       <p class="note"><strong>Portfolio demo:</strong> the reports use fictional local API data. Each report labels its scope explicitly: loopback URLs and responses are captured evidence from a local fixture, not live customer endpoints. The failure example is intentional and demonstrates expected-versus-actual diagnostics; no live customer system is monitored.</p>
+      <section class="note" aria-labelledby="read-title"><strong id="read-title">How to read it:</strong> open a test card to inspect the request, assertion path, latency, retry count, and redacted reproduction command. The HTML page is for people, JSON is for comparisons and trend history, and JUnit is for CI test-result viewers. <a href="report-demo.html">See the complete walkthrough</a>.</section>
+      <p class="actions"><a class="button secondary" href="sample-report.json">Download passing JSON</a><a class="button secondary" href="sample-report.xml">Download passing JUnit</a><a class="button secondary" href="sample-failure-report.json">Download failure JSON</a></p>
       <footer>QA Sentinel is a dependency-free Python CLI for repeatable API regression checks, retries, safe diagnostics, and portable reports. <a href="https://github.com/T98765SREDT/qa-sentinel#quickstart">Read the quickstart</a> · 149 tests</footer>
     </main>
   </body>

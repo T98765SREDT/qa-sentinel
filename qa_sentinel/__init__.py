@@ -29,4 +29,4 @@ __all__ = [
     "load_environment_profile",
     "load_suite",
 ]
-__version__ = "1.3.1"
+__version__ = "1.3.2"
