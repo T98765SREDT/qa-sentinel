@@ -4,6 +4,8 @@ All notable changes to QA Sentinel are documented here. This project follows a l
 
 ## Unreleased
 
+## 1.3.0 — 2026-09-09
+
 - Hardened CI with read-only repository permissions and cancellation of stale runs on the same ref.
 - Decode response bodies using a declared `Content-Type` charset, with a deterministic UTF-8 fallback for unknown declarations.
 - Expanded the automated suite to 52 checks with regression coverage for legacy non-UTF-8 API responses.

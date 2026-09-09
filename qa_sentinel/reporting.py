@@ -9,6 +9,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 from datetime import datetime, timezone
+from urllib.parse import urlparse
 from xml.etree import ElementTree as ET
 
 from .models import SuiteResult
@@ -26,6 +27,23 @@ _RESPONSE_PREVIEW_LIMITS = {
     "text": 1600,
 }
 _TRUNCATION_MARKER = "… [truncated]"
+
+
+def _is_loopback_url(value: Any) -> bool:
+    """Return whether a URL points at a local-only loopback host."""
+
+    try:
+        hostname = (urlparse(str(value)).hostname or "").lower()
+    except ValueError:
+        return False
+    return hostname in {"127.0.0.1", "localhost", "::1"}
+
+
+def _is_synthetic_loopback_report(report: dict[str, Any]) -> bool:
+    """Identify reports whose captured checks all ran against a local fixture."""
+
+    tests = report.get("tests") or []
+    return bool(tests) and all(_is_loopback_url(test.get("url")) for test in tests)
 
 
 def _media_type(headers: Any) -> str:
@@ -518,6 +536,13 @@ def render_html(result: SuiteResult, known_secrets: tuple[str, ...] = ()) -> str
         f'{_escape(str(summary["skipped"]))} skipped'
         f'{" · interrupted" if report.get("interrupted") else ""}</p>'
     )
+    scope_markup = (
+        '<p class="run-note report-scope"><strong>Demo scope:</strong> '
+        'synthetic loopback API. URLs and responses were captured from a local '
+        'fixture while generating this report; they are not live customer endpoints.</p>'
+        if _is_synthetic_loopback_report(report)
+        else ""
+    )
     provenance = report.get("provenance", {})
     provenance_bits = []
     if report.get("run_id"):
@@ -545,7 +570,7 @@ def render_html(result: SuiteResult, known_secrets: tuple[str, ...] = ()) -> str
 .wrap{{max-width:1128px;margin:auto;padding:0 24px}}.brand{{display:flex;align-items:center;gap:12px;color:#cbd1ff;font-size:13px;font-weight:700;letter-spacing:.15em;text-transform:uppercase}}
 .logo{{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:#fff;color:#272663;font-size:20px;box-shadow:0 8px 25px #070b1c55}}
 h1{{font-size:clamp(30px,5vw,48px);margin:28px 0 8px;letter-spacing:-.04em}}.subtitle{{color:#cbd1dd;margin:0;font-size:15px}}
-.run-note{{display:inline-block;margin:18px 0 0;padding:8px 11px;border:1px solid #ffffff3b;border-radius:8px;background:#ffffff12;color:#eef0ff;font-size:12px}}
+.run-note{{display:inline-block;margin:18px 0 0;padding:8px 11px;border:1px solid #ffffff3b;border-radius:8px;background:#ffffff12;color:#eef0ff;font-size:12px}}.report-scope{{background:#fff3d6;border-color:#ffd27a;color:#6f4a00}}
 .summary-grid{{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:-50px}}.summary-card{{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px 22px;box-shadow:0 12px 32px #1b244112}}
 .summary-card small{{display:block;color:var(--muted);font-weight:650;text-transform:uppercase;letter-spacing:.08em;font-size:11px}}.summary-card b{{display:block;font-size:28px;margin-top:7px}}.summary-card.pass b{{color:var(--pass)}}.summary-card.fail b{{color:var(--fail)}}
 .progress{{height:8px;background:#e8ebf1;border-radius:20px;overflow:hidden;margin:28px 0 32px}}.progress div{{height:100%;width:{pass_width}%;background:linear-gradient(90deg,#0c9,#45c993);border-radius:20px}}
@@ -557,7 +582,7 @@ h1{{font-size:clamp(30px,5vw,48px);margin:28px 0 8px;letter-spacing:-.04em}}.sub
 .tags{{margin-left:44px}}.tag{{display:inline-block;background:#f0f1fa;color:#4f5490;border-radius:6px;padding:4px 7px;font-size:10px;margin:0 5px 5px 0}}details{{margin:12px 0 0 44px;border-top:1px solid var(--line);padding-top:11px}}summary{{cursor:pointer;color:var(--muted);font-size:12px;font-weight:650}}.response-preview{{background:#f7f8fb;border:1px solid var(--line);border-radius:8px;padding:10px 12px}}.response-preview pre{{margin:10px 0 0;max-height:260px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font:12px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--ink)}}ul{{list-style:none;padding:8px 0 0;margin:0}}.assertion{{display:flex;gap:9px;padding:7px 0}}.assertion-icon{{color:var(--pass);font-weight:900}}.assertion.bad .assertion-icon{{color:var(--fail)}}.assertion strong{{font-size:12px}}.assertion p{{margin:2px 0;color:var(--muted);font-size:12px}}.comparison{{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}}.comparison span{{display:grid;gap:4px;background:#f7f8fb;border:1px solid var(--line);border-radius:8px;padding:8px}}.comparison small{{color:var(--muted);font-size:10px;font-weight:750;text-transform:uppercase;letter-spacing:.06em}}.comparison code{{font:12px ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere;white-space:pre-wrap}}.error{{margin:12px 0 0 44px;padding:10px;background:#fff0f1;color:#a9272c;border-radius:8px;font:12px ui-monospace,monospace}}.empty{{background:#fff;border:1px dashed var(--line);border-radius:14px;color:var(--muted);margin:0 0 18px;padding:24px;text-align:center}}.results-count{{margin:0 0 12px;color:var(--muted);font-size:11px}}.toolbar-actions{{display:flex;gap:7px;align-items:center;margin-left:auto;flex-wrap:wrap}}.toolbar-actions button{{border:1px solid var(--line);background:#fff;padding:9px 11px;border-radius:9px;color:var(--ink-soft);cursor:pointer;font-size:11px;font-weight:700}}
 footer{{color:var(--muted);font-size:12px;padding:5px 0 35px;text-align:center}}footer a{{color:#4f5cb4}}@media(max-width:700px){{.wrap{{padding:0 14px}}.summary-grid{{grid-template-columns:1fr 1fr}}.metrics{{flex-wrap:wrap}}.test-heading{{align-items:center}}.hero{{padding-top:32px}}.comparison{{grid-template-columns:1fr}}}}
 </style></head><body>
-<header class="hero"><div class="wrap"><div class="brand"><span class="logo">◆</span> QA Sentinel</div><h1>{_escape(report["suite"])}</h1><p class="subtitle">Run completed <time datetime="{_escape(report["finished_at"])}">{_escape(_format_timestamp(report["finished_at"]))}</time> · {report["duration_ms"]:.1f} ms total{f' · Environment: {_escape(report["environment"])}' if report.get("environment") else ''}</p>{verdict_markup}{provenance_markup}{description_markup}{profile_markup}{source_markup}</div></header>
+<header class="hero"><div class="wrap"><div class="brand"><span class="logo">◆</span> QA Sentinel</div><h1>{_escape(report["suite"])}</h1><p class="subtitle">Run completed <time datetime="{_escape(report["finished_at"])}">{_escape(_format_timestamp(report["finished_at"]))}</time> · {report["duration_ms"]:.1f} ms total{f' · Environment: {_escape(report["environment"])}' if report.get("environment") else ''}</p>{scope_markup}{verdict_markup}{provenance_markup}{description_markup}{profile_markup}{source_markup}</div></header>
 <main class="wrap"><section class="summary-grid"><div class="summary-card"><small>Total tests</small><b>{summary["total"]}</b></div><div class="summary-card pass"><small>Passed</small><b>{summary["passed"]}</b></div><div class="summary-card{failure_class}"><small>Failed</small><b>{summary["failed"]}</b></div><div class="summary-card"><small>Success rate</small><b>{summary["success_rate"]:.1f}%</b></div></section><div class="progress" aria-label="{summary["success_rate"]:.1f}% of tests passed"><div></div></div>
 <div class="toolbar"><input id="search" class="search" placeholder="Search tests, tags, or assertions…" aria-label="Search tests, tags, or assertions"><div class="filter-group" role="group" aria-label="Filter tests"><button class="filter active" data-filter="all" aria-pressed="true">All</button><button class="filter" data-filter="passed" aria-pressed="false">Passed</button><button class="filter" data-filter="failed" aria-pressed="false">Failed</button><button class="filter" data-filter="error" aria-pressed="false">Errors</button><button class="filter" data-filter="blocked" aria-pressed="false">Blocked</button><button class="filter" data-filter="skipped" aria-pressed="false">Skipped</button><button class="filter" data-filter="retried" aria-pressed="false">Retried</button><button class="filter" data-filter="slow" aria-pressed="false">Slow</button></div><label class="sort">Sort <select id="sort"><option value="default">Suite order</option><option value="status">Failures first</option><option value="latency">Slowest first</option><option value="name">Name</option></select></label><div class="toolbar-actions"><button type="button" data-action="clear">Clear search</button><button type="button" data-action="expand">Expand all</button><button type="button" data-action="download-json">Download JSON</button><button type="button" data-action="download-junit">Download JUnit</button></div></div><p id="result-count" class="results-count" aria-live="polite"></p><p id="empty" class="empty" hidden>No tests match this view. Clear the search or choose another filter.</p><section id="tests" class="test-list" aria-live="polite">{cards}</section></main>
 <footer>Generated by QA Sentinel · configured and credential-shaped values redacted · <a href="./">Back to overview</a> · <a href="https://github.com/T98765SREDT/qa-sentinel">Source</a></footer>
