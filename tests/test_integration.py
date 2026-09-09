@@ -582,7 +582,9 @@ class OrderWorkflowIntegrationTests(unittest.TestCase):
         suite = self.suite("order-workflow.json")
         cases = list(suite.tests)
         create_index = next(index for index, case in enumerate(cases) if case.case_id == "create")
-        cases[create_index] = replace(cases[create_index], url="http://127.0.0.1:1/orders")
+        # Port 0 is reserved for ephemeral server allocation, so it is a
+        # deterministic closed destination across hosted CI operating systems.
+        cases[create_index] = replace(cases[create_index], url="http://127.0.0.1:0/orders")
         suite = replace(suite, tests=tuple(cases))
 
         result = SuiteRunner().run(suite)
